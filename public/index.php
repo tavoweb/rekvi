@@ -283,19 +283,11 @@ switch ($page) {
                 $view_data['import_results'] = null;
 
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                    // --- PRADINIS DEBUG PATIKRINIMAS ---
-                    // Atkomentuokite šias eilutes, kad pamatytumėte, kas gaunama pateikus formą:
-                    // echo "POST request received for import.<br>";
-                    // echo "POST data: <pre>" . htmlspecialchars(print_r($_POST, true)) . "</pre>";
-                    // echo "FILES data: <pre>" . htmlspecialchars(print_r($_FILES, true)) . "</pre>";
-                    // die("Debug stop."); // Sustabdo vykdymą čia
-                    // --- PABAIGA DEBUG PATIKRINIMO ---
-
                     if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
                         $file_tmp_path = $_FILES['csv_file']['tmp_name'];
                         $file_name = $_FILES['csv_file']['name'];
                         $file_size = $_FILES['csv_file']['size'];
-                        $file_type = $_FILES['csv_file']['type']; // Naršyklės pateiktas tipas
+                        $file_type = $_FILES['csv_file']['type'];
                         $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
                         $allowed_extension = 'csv';
@@ -306,51 +298,34 @@ switch ($page) {
                         } elseif ($file_size > $max_file_size) {
                             $view_data['errors']['general'] = 'Failas per didelis. Maksimalus dydis 5MB.';
                         } else {
-                            // Bandoma atidaryti ir nuskaityti CSV failą
                             if (($handle = fopen($file_tmp_path, "r")) !== false) {
-                                $header = fgetcsv($handle, 0, ","); // Nuskaitome antraštę
-                                // Tikėtini antraščių pavadinimai (raktas) ir DB stulpelių pavadinimai (reikšmė)
+                                $header = fgetcsv($handle, 0, ",");
                                 $expected_headers_map = [
-                                    'Pavadinimas' => 'pavadinimas',
-                                    'ImonesKodas' => 'imones_kodas',
-                                    'PVMKodas' => 'pvm_kodas',
-                                    'VadovasVardasPavarde' => 'vadovas_vardas_pavarde',
-                                    'Tinklalapis' => 'tinklalapis',
-                                    'DarboLaikas' => 'darbo_laikas',
-                                    'AdresasSalis' => 'adresas_salis',
-                                    'AdresasMiestas' => 'adresas_miestas',
-                                    'AdresasGatve' => 'adresas_gatve',
-                                    'AdresasPastoKodas' => 'adresas_pasto_kodas',
-                                    'Telefonas' => 'telefonas',
-                                    'ElPastas' => 'el_pastas',
-                                    'KontaktinisAsmuo' => 'kontaktinis_asmuo',
-                                    'BankoPavadinimas' => 'banko_pavadinimas',
-                                    'BankoSaskaita' => 'banko_saskaita',
+                                    'Pavadinimas' => 'pavadinimas', 'ImonesKodas' => 'imones_kodas', 'PVMKodas' => 'pvm_kodas',
+                                    'VadovasVardasPavarde' => 'vadovas_vardas_pavarde', 'Tinklalapis' => 'tinklalapis', 'DarboLaikas' => 'darbo_laikas',
+                                    'AdresasSalis' => 'adresas_salis', 'AdresasMiestas' => 'adresas_miestas', 'AdresasGatve' => 'adresas_gatve',
+                                    'AdresasPastoKodas' => 'adresas_pasto_kodas', 'Telefonas' => 'telefonas', 'ElPastas' => 'el_pastas',
+                                    'KontaktinisAsmuo' => 'kontaktinis_asmuo', 'BankoPavadinimas' => 'banko_pavadinimas', 'BankoSaskaita' => 'banko_saskaita',
                                     'Pastabos' => 'pastabos'
                                 ];
-                                // Patikriname, ar antraštė atitinka lūkesčius (bent jau pagrindiniai laukai)
                                 if (!$header || !in_array('Pavadinimas', $header, true) || !in_array('ImonesKodas', $header, true)) {
                                     $view_data['errors']['general'] = 'CSV failo antraštė neteisinga arba trūksta būtinų stulpelių (Pavadinimas, ImonesKodas).';
                                 } else {
                                     $import_stats = ['success_count' => 0, 'error_count' => 0, 'error_details' => []];
-                                    $row_number = 1; // Antraštė buvo 1-a eilutė
-
+                                    $row_number = 1;
                                     while (($data_row = fgetcsv($handle, 0, ",")) !== false) {
                                         $row_number++;
                                         $company_data_to_insert = [];
-                                        // Suformuojame masyvą pagal $expected_headers_map
                                         foreach ($header as $index => $col_name) {
                                             if (isset($expected_headers_map[$col_name]) && isset($data_row[$index])) {
                                                 $company_data_to_insert[$expected_headers_map[$col_name]] = trim($data_row[$index]);
                                             }
                                         }
-
                                         if (empty($company_data_to_insert['pavadinimas']) || empty($company_data_to_insert['imones_kodas'])) {
                                             $import_stats['error_count']++;
                                             $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Trūksta pavadinimo arba įmonės kodo.', 'data' => $data_row];
                                             continue;
                                         }
-
                                         if ($companyManager->createCompany($company_data_to_insert)) {
                                             $import_stats['success_count']++;
                                         } else {
@@ -368,7 +343,6 @@ switch ($page) {
                     } elseif (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] !== UPLOAD_ERR_NO_FILE) {
                         $view_data['errors']['general'] = 'Klaida įkeliant failą. Klaidos kodas: ' . $_FILES['csv_file']['error'];
                     } else {
-                        // Jei POST, bet failo nėra, tai klaida, nebent tai pirmas puslapio užkrovimas (GET)
                         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             $view_data['errors']['general'] = 'Prašome pasirinkti CSV failą.';
                         }
@@ -381,9 +355,30 @@ switch ($page) {
                 $search_query = $_GET['search_query'] ?? null;
                 $view_data['companies'] = $companyManager->getAllCompanies($search_query);
                 if ($search_query) {
-                    $view_data['search_query_active'] = $search_query; // Perduodame paieškos terminą į šabloną
+                    $view_data['search_query_active'] = $search_query;
                 }
                 $view_template = 'companies/index.php';
+                break;
+        }
+        break;
+
+    case 'admin':
+        $auth->requireAdmin();
+        $admin_action = $action ?? 'dashboard';
+
+        switch ($admin_action) {
+            case 'users':
+                $view_data['users'] = $auth->getAllUsers();
+                $view_template = 'admin/users_list.php';
+                break;
+                // case 'dashboard':
+            default:
+                // For now, if no specific admin action, or it's 'dashboard',
+                // redirect to home or show a simple admin dashboard.
+                // $view_template = 'admin/dashboard.php';
+                // Decided to redirect to home if no specific admin action is matched for now.
+                set_flash_message('info_message', 'Pasirinkite veiksmą administratoriaus skydelyje.');
+                redirect('home'); // Or 'admin/dashboard' if you create that page.
                 break;
         }
         break;
