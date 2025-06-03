@@ -670,6 +670,11 @@ footer p {
     .sidebar-toggle {
         display: block;
     }
+
+    /* Add the new rule here */
+    .sidebar-header {
+        display: none; /* This will hide the header within the sidebar itself on mobile */
+    }
 
     .main-content {
         margin-left: 0;
