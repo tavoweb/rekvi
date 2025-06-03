@@ -1,18 +1,18 @@
-# RekvizituValdymoSistema/.htaccess
-<IfModule mod_rewrite.c>
-  RewriteEngine On
-
-  # Nukreipti visus užklausimus į public katalogą
-  RewriteRule ^$ public/ [L]
-  RewriteRule (.*) public/$1 [L]
-</IfModule>
-
-# Papildomai, Jums reikės .htaccess failo public kataloge, jei norite viską nukreipti į public/index.php
-# Sukurkite RekvizituValdymoSistema/public/.htaccess su tokiu turiniu:
-#
-# <IfModule mod_rewrite.c>
-#   RewriteEngine On
-#   RewriteCond %{REQUEST_FILENAME} !-f
-#   RewriteCond %{REQUEST_FILENAME} !-d
-#   RewriteRule ^ index.php [QSA,L]
+# RekvizituValdymoSistema/.htaccess
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Nukreipti visus užklausimus į public katalogą
+  RewriteRule ^$ public/ [L]
+  RewriteRule (.*) public/$1 [L]
+</IfModule>
+
+# Papildomai, Jums reikės .htaccess failo public kataloge, jei norite viską nukreipti į public/index.php
+# Sukurkite RekvizituValdymoSistema/public/.htaccess su tokiu turiniu:
+#
+# <IfModule mod_rewrite.c>
+#   RewriteEngine On
+#   RewriteCond %{REQUEST_FILENAME} !-f
+#   RewriteCond %{REQUEST_FILENAME} !-d
+#   RewriteRule ^ index.php [QSA,L]
 # </IfModule>

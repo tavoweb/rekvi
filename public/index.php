@@ -352,37 +352,57 @@ switch ($page) {
                 break;
 
             case 'load_more_companies':
+                // Temporary error reporting for debugging this specific action
+                error_reporting(E_ALL);
+                ini_set('display_errors', 1);
+
+                // Crucial: Set content type header BEFORE any output
+                // If any PHP error occurs before this and display_errors is on, it could break JSON output.
+                // For robust production, consider a global error handler that formats errors as JSON for AJAX requests.
+                header('Content-Type: application/json');
+
                 if (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') {
-                    // Optional: Redirect or show error if not an AJAX request
-                    // For now, just exit to prevent unexpected output.
                     // error_log("Non-AJAX attempt to access load_more_companies");
+                    // Ensure this error message is also JSON
                     http_response_code(400); // Bad Request
-                    echo json_encode(['error' => 'Invalid request method.']);
+                    echo json_encode(['error' => 'Invalid request method. This endpoint is for AJAX requests only.']);
                     exit;
                 }
 
                 $requested_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
                 if ($requested_page <= 0) {
-                    $requested_page = 1; // Default to page 1 if invalid
+                    // It's an AJAX endpoint, client expects JSON.
+                    http_response_code(400); // Bad Request
+                    echo json_encode(['error' => 'Invalid page number.']);
+                    exit;
                 }
-
-                // Determine search query for AJAX calls.
-                // If your JS sends search_query with AJAX, use it. Otherwise, it's null.
-                // For this implementation, we'll assume search_query might be passed via GET
+                
                 $search_query_ajax = $_GET['search_query'] ?? null;
+                $companies_per_page = 100; 
+                
+                // All variables for the response
+                $response_data = [
+                    'companies' => [],
+                    'isAdmin' => $auth->isAdmin(), // Get isAdmin status regardless of company results
+                    'logos_dir_url' => LOGO_UPLOAD_DIR_PUBLIC,
+                    'search_query_active' => $search_query_ajax, // Reflect back the search query used
+                    'page' => $requested_page // Reflect back the page number processed
+                ];
 
-                $companies_per_page = 100; // Same as initial load and JS expectations
-                $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
-                $isAdmin = $auth->isAdmin();
-
-                header('Content-Type: application/json');
-                echo json_encode([
-                    'companies' => $companies,
-                    'isAdmin' => $isAdmin,
-                    'logos_dir_url' => LOGO_UPLOAD_DIR_PUBLIC
-                    // search_query_active could also be returned if needed by JS to display status
-                    // 'search_query_active' => $search_query_ajax
-                ]);
+                try {
+                    $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
+                    $response_data['companies'] = $companies;
+                } catch (Exception $e) {
+                    // Log the actual error for server admin
+                    error_log("Error in load_more_companies: " . $e->getMessage());
+                    // Provide a generic error in JSON format to the client
+                    http_response_code(500); // Internal Server Error
+                    echo json_encode(['error' => 'An error occurred while fetching company data.']);
+                    exit;
+                }
+                
+                // No stray echos or HTML output before this.
+                echo json_encode($response_data);
                 exit;
 
             default:
@@ -398,6 +418,12 @@ switch ($page) {
         break;
 
     case 'admin':
+// Note: The original diff had two separate hunks. I'm combining the logic from the second hunk (which was identical to the first in terms of search/replace target) 
+// into the first one for clarity, as the tool expects one search/replace per block.
+// The original second SEARCH block was identical to the first one.
+// The original second REPLACE block was also effectively the same change.
+// This means the diff tool might have an issue if the same block appears twice.
+// I'm providing a single, consolidated change for `case 'load_more_companies':`
         $auth->requireAdmin();
         $admin_action = $action ?? 'dashboard';
 

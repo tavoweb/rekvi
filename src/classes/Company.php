@@ -144,13 +144,13 @@ class Company
 
         try {
 
-            $sql = "INSERT INTO " . $this->companiesTable . " 
-                    (pavadinimas, imones_kodas, pvm_kodas, adresas_salis, adresas_miestas, adresas_gatve, adresas_pasto_kodas, 
-                    telefonas, el_pastas, banko_pavadinimas, banko_saskaita, kontaktinis_asmuo, pastabos,
-                    logotipas, vadovas_vardas_pavarde, tinklalapis, darbo_laikas)
-                    VALUES 
-                    (:pavadinimas, :imones_kodas, :pvm_kodas, :adresas_salis, :adresas_miestas, :adresas_gatve, :adresas_pasto_kodas, 
-                    :telefonas, :el_pastas, :banko_pavadinimas, :banko_saskaita, :kontaktinis_asmuo, :pastabos,
+            $sql = "INSERT INTO " . $this->companiesTable . " 
+                    (pavadinimas, imones_kodas, pvm_kodas, adresas_salis, adresas_miestas, adresas_gatve, adresas_pasto_kodas, 
+                    telefonas, el_pastas, banko_pavadinimas, banko_saskaita, kontaktinis_asmuo, pastabos,
+                    logotipas, vadovas_vardas_pavarde, tinklalapis, darbo_laikas)
+                    VALUES 
+                    (:pavadinimas, :imones_kodas, :pvm_kodas, :adresas_salis, :adresas_miestas, :adresas_gatve, :adresas_pasto_kodas, 
+                    :telefonas, :el_pastas, :banko_pavadinimas, :banko_saskaita, :kontaktinis_asmuo, :pastabos,
                     :logotipas, :vadovas_vardas_pavarde, :tinklalapis, :darbo_laikas)";
 
             $this->db->query($sql);

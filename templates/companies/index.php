@@ -1,78 +1,78 @@
-<?php
-// templates/companies/index.php
-$companies = $view_data['companies'] ?? [];
-$search_query_active = $view_data['search_query_active'] ?? null;
-/** @var Auth $auth */ // подсказка IDE
-$auth = $view_data['auth']; // $auth objektas perduodamas iš index.php
-$isAdmin = $auth->isAdmin();
-
-$logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC; // Naudojame konstantą iš index.php
-?>
-<h2>Įmonių Rekvizitai</h2>
-
-<p style="margin-bottom: 20px;">
-    <a href="<?php echo url('companies', 'create'); ?>" class="button button-primary" style="margin-right: 10px;">Pridėti Naują Įmonę</a>
-    <?php if ($isAdmin): // Importavimo mygtukas matomas tik administratoriams ?>
-    <a href="<?php echo url('companies', 'import'); ?>" class="button button-secondary">Importuoti Įmones (CSV)</a>
-    <?php endif; ?>
-</p>
-
-<?php if ($search_query_active): ?>
-    <div class="alert alert-info">
-        Rodomi paieškos rezultatai pagal: "<strong><?php echo e($search_query_active); ?></strong>". <a href="<?php echo url('companies'); ?>">Rodyti visas įmones</a>.
-    </div>
-<?php endif; ?>
-
-<?php if (empty($companies)): ?>
-    <p>Įmonių nerasta.
-    <?php if ($isAdmin): // Pasiūlymas pridėti matomas tik administratoriams ?>
-        Galite <a href="<?php echo url('companies', 'create'); ?>">pridėti pirmąją</a>.
-    <?php endif; ?>
-    </p>
-<?php else: ?>
-    <div class="table-responsive-wrapper">
-        <table>
-            <thead>
-                <tr>
-                    <th>Logotipas</th>
-                    <th>Pavadinimas</th>
-                    <th>Įmonės Kodas</th>
-                    <th>PVM Kodas</th>
-                    <?php if ($isAdmin): // Veiksmų stulpelis matomas tik administratoriams ?>
-                    <th>Veiksmai</th>
-                    <?php endif; ?>
-                </tr>
-            </thead>
+<?php
+// templates/companies/index.php
+$companies = $view_data['companies'] ?? [];
+$search_query_active = $view_data['search_query_active'] ?? null;
+/** @var Auth $auth */ // подсказка IDE
+$auth = $view_data['auth']; // $auth objektas perduodamas iš index.php
+$isAdmin = $auth->isAdmin();
+
+$logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC; // Naudojame konstantą iš index.php
+?>
+<h2>Įmonių Rekvizitai</h2>
+
+<p style="margin-bottom: 20px;">
+    <a href="<?php echo url('companies', 'create'); ?>" class="button button-primary" style="margin-right: 10px;">Pridėti Naują Įmonę</a>
+    <?php if ($isAdmin): // Importavimo mygtukas matomas tik administratoriams ?>
+    <a href="<?php echo url('companies', 'import'); ?>" class="button button-secondary">Importuoti Įmones (CSV)</a>
+    <?php endif; ?>
+</p>
+
+<?php if ($search_query_active): ?>
+    <div class="alert alert-info">
+        Rodomi paieškos rezultatai pagal: "<strong><?php echo e($search_query_active); ?></strong>". <a href="<?php echo url('companies'); ?>">Rodyti visas įmones</a>.
+    </div>
+<?php endif; ?>
+
+<?php if (empty($companies)): ?>
+    <p>Įmonių nerasta.
+    <?php if ($isAdmin): // Pasiūlymas pridėti matomas tik administratoriams ?>
+        Galite <a href="<?php echo url('companies', 'create'); ?>">pridėti pirmąją</a>.
+    <?php endif; ?>
+    </p>
+<?php else: ?>
+    <div class="table-responsive-wrapper">
+        <table>
+            <thead>
+                <tr>
+                    <th>Logotipas</th>
+                    <th>Pavadinimas</th>
+                    <th>Įmonės Kodas</th>
+                    <th>PVM Kodas</th>
+                    <?php if ($isAdmin): // Veiksmų stulpelis matomas tik administratoriams ?>
+                    <th>Veiksmai</th>
+                    <?php endif; ?>
+                </tr>
+            </thead>
             <tbody id="companies-tbody">
-                <?php foreach ($companies as $company): ?>
-                <tr>
-                    <td>
-                        <?php if (!empty($company['logotipas'])): ?>
-                            <a href="<?php echo url('companies', 'view', (int)$company['id']); ?>">
-                                <img src="<?php echo $logos_dir_url . e($company['logotipas']); ?>" alt="<?php echo e($company['pavadinimas']); ?>" class="logo-thumbnail">
-                            </a>
-                        <?php else: ?>
-                            <div class="logo-thumbnail-placeholder">[Nėra]</div>
-                        <?php endif; ?>
-                    </td>
-                    <td>
-                        <a href="<?php echo url('companies', 'view', (int)$company['id']); ?>">
-                            <?php echo e($company['pavadinimas']); ?>
-                        </a>
-                    </td>
-                    <td><?php echo e($company['imones_kodas']); ?></td>
-                    <td><?php echo e($company['pvm_kodas'] ?? '-'); ?></td>
-                    <?php if ($isAdmin): // Veiksmai matomi tik administratoriams ?>
-                    <td>
-                        <a href="<?php echo url('companies', 'edit', (int)$company['id']); ?>" class="button button-small">Redaguoti</a>
-                        <a href="<?php echo url('companies', 'delete', (int)$company['id']); ?>" class="button button-small button-danger">Trinti</a>
-                    </td>
-                    <?php endif; ?>
-                </tr>
-                <?php endforeach; ?>
-            </tbody>
-        </table>
-    </div>
+                <?php foreach ($companies as $company): ?>
+                <tr>
+                    <td>
+                        <?php if (!empty($company['logotipas'])): ?>
+                            <a href="<?php echo url('companies', 'view', (int)$company['id']); ?>">
+                                <img src="<?php echo $logos_dir_url . e($company['logotipas']); ?>" alt="<?php echo e($company['pavadinimas']); ?>" class="logo-thumbnail">
+                            </a>
+                        <?php else: ?>
+                            <div class="logo-thumbnail-placeholder">[Nėra]</div>
+                        <?php endif; ?>
+                    </td>
+                    <td>
+                        <a href="<?php echo url('companies', 'view', (int)$company['id']); ?>">
+                            <?php echo e($company['pavadinimas']); ?>
+                        </a>
+                    </td>
+                    <td><?php echo e($company['imones_kodas']); ?></td>
+                    <td><?php echo e($company['pvm_kodas'] ?? '-'); ?></td>
+                    <?php if ($isAdmin): // Veiksmai matomi tik administratoriams ?>
+                    <td>
+                        <a href="<?php echo url('companies', 'edit', (int)$company['id']); ?>" class="button button-small">Redaguoti</a>
+                        <a href="<?php echo url('companies', 'delete', (int)$company['id']); ?>" class="button button-small button-danger">Trinti</a>
+                    </td>
+                    <?php endif; ?>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 <?php endif; ?>
 
 <div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
@@ -87,9 +87,10 @@ document.addEventListener('DOMContentLoaded', function () {
     let isLoading = false;
     const isAdmin = <?php echo json_encode($isAdmin); ?>;
     const logosDirUrl = <?php echo json_encode($logos_dir_url); ?>;
+    const currentSearchTerm = <?php echo json_encode($search_query_active ?? null); ?>;
     // Function to generate URL (approximating the PHP url() function)
     function siteUrl(controller, action = '', id = 0) {
-        let path = `index.php?route=${controller}`;
+        let path = `companies/route=${controller}`;
         if (action) {
             path += `&action=${action}`;
         }
@@ -113,6 +114,16 @@ document.addEventListener('DOMContentLoaded', function () {
              .replace(/'/g, "&#039;");
     }
 
+    // Debounce function
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
+
     function loadMoreCompanies() {
         if (isLoading) {
             return;
@@ -122,7 +133,10 @@ document.addEventListener('DOMContentLoaded', function () {
         if(loadingIndicator) loadingIndicator.style.display = 'block';
 
         // Corrected AJAX URL construction
-        const ajaxUrl = `index.php?route=companies&action=load_more_companies&page=${currentPage}&ajax=1`;
+        let ajaxUrl = `companies/route=companies&action=load_more_companies&page=${currentPage}&ajax=1`;
+        if (currentSearchTerm) {
+            ajaxUrl += `&search_query=${encodeURIComponent(currentSearchTerm)}`;
+        }
 
 
         fetch(ajaxUrl)
@@ -152,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function () {
                         `;
                         companiesTbody.appendChild(tr);
                     });
+                    if(loadingIndicator) loadingIndicator.style.display = 'none'; // Hide after successful load
                 } else {
                     // No more companies to load
                     if(loadingIndicator) loadingIndicator.innerHTML = '<p>Daugiau įmonių nerasta.</p>';
@@ -165,9 +180,10 @@ document.addEventListener('DOMContentLoaded', function () {
             })
             .finally(() => {
                 isLoading = false;
-                // The decision to hide the indicator is now primarily within the .then() block
-                // If it's showing "No more companies" or "Error", it should remain visible.
-                // If it was loading and successful, it's hidden in .then().
+                // If loadingIndicator was set to display:block and no companies were loaded (or error),
+                // it will remain visible with the appropriate message.
+                // If companies were loaded, it's hidden inside the .then() block.
+                // This logic seems fine.
                 // If it was loading and then an error, it shows the error.
             });
     }
@@ -179,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     }
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', debounce(handleScroll, 250)); // Debounce scroll with 250ms delay
 
     // Initial check in case the content is too short to scroll
     // Or if there are fewer than 100 companies and no scrollbar appears.
