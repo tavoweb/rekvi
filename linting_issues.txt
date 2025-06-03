@@ -1,0 +1,4022 @@
+   1) src/classes/Database.php
+      ---------- begin diff ----------
+--- /app/src/classes/Database.php
++++ /app/src/classes/Database.php
+@@ -1,139 +1,285 @@
+-<?php
+
+-// src/classes/Database.php
+
+-
+
+-class Database {
+
+-    private string $host = DB_HOST;
+
+-    private string $user = DB_USER;
+
+-    private string $pass = DB_PASS;
+
+-    private string $dbname = DB_NAME;
+
+-
+
+-    private PDO $dbh; // Database Handler
+
+-    private PDOStatement $stmt; // Statement
+
+-    private ?string $error = null;
+
+-
+
+-    public function __construct() {
+
+-        $dsn = 'mysql:host=' . $this->host . ';dbname=' . $this->dbname . ';charset=utf8mb4';
+
+-        $options = [
+
+-            PDO::ATTR_PERSISTENT => true,
+
+-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Svarbu klaidų gaudymui
+
+-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+
+-            PDO::ATTR_EMULATE_PREPARES => false,
+
+-        ];
+
+-
+
+-        try {
+
+-            $this->dbh = new PDO($dsn, $this->user, $this->pass, $options);
+
+-        } catch (PDOException $e) {
+
+-            $this->error = $e->getMessage();
+
+-            // Realiame projekte čia reikėtų detalesnio klaidų log'inimo, o ne die()
+
+-            error_log("Database Connection Error: " . $this->error);
+
+-            die("Nepavyko prisijungti prie duomenų bazės. Prašome bandyti vėliau.");
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Paruošia SQL užklausą vykdymui.
+
+-     * @param string $sql SQL užklausa.
+
+-     */
+
+-    public function query(string $sql): void {
+
+-        try {
+
+-            $this->stmt = $this->dbh->prepare($sql);
+
+-        } catch (PDOException $e) {
+
+-            $this->error = $e->getMessage();
+
+-            error_log("Database Query Preparation Error: " . $this->error . " | SQL: " . $sql);
+
+-            // Galima mesti išimtį toliau arba grąžinti false/null priklausomai nuo logikos
+
+-            throw $e; // Mesti išimtį, kad būtų galima pagauti aukštesniame lygyje
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Susieja reikšmę su SQL užklausos parametru.
+
+-     * @param string|int $param Parametro pavadinimas (pvz., :name) arba pozicija (?).
+
+-     * @param mixed $value Reikšmė, kurią reikia susieti.
+
+-     * @param int|null $type PDO::PARAM_* konstanta (pasirinktinai).
+
+-     */
+
+-    public function bind($param, $value, ?int $type = null): void {
+
+-        if (is_null($type)) {
+
+-            switch (true) {
+
+-                case is_int($value):
+
+-                    $type = PDO::PARAM_INT;
+
+-                    break;
+
+-                case is_bool($value):
+
+-                    $type = PDO::PARAM_BOOL;
+
+-                    break;
+
+-                case is_null($value):
+
+-                    $type = PDO::PARAM_NULL;
+
+-                    break;
+
+-                default:
+
+-                    $type = PDO::PARAM_STR;
+
+-            }
+
+-        }
+
+-        $this->stmt->bindValue($param, $value, $type);
+
+-    }
+
+-
+
+-    /**
+
+-     * Įvykdo paruoštą SQL užklausą.
+
+-     * @return bool True, jei sėkmingai, false - kitu atveju.
+
+-     */
+
+-    public function execute(): bool {
+
+-        try {
+
+-            return $this->stmt->execute();
+
+-        } catch (PDOException $e) { // Sugauta PDO išimtis vykdymo metu
+
+-            $this->error = $e->getMessage();
+
+-            // Pridedame detalesnį klaidų registravimą
+
+-            ob_start(); // Pradedame išvesties buferizavimą
+
+-            $this->stmt->debugDumpParams(); // Išvedame informaciją apie paruoštą užklausą ir susietus parametrus
+
+-            $dump = ob_get_clean(); // Gauname buferio turinį ir išvalome jį
+
+-            error_log("Database Execution Error: " . $this->error . "\nSQL Query (prepared): " . $this->stmt->queryString . "\nDebug Dump Params:\n" . $dump);
+
+-            // Svarstyti, ar mesti išimtį, ar grąžinti false
+
+-            // throw $e; // Jei norite, kad klaida būtų apdorojama aukščiau
+
+-            return false; // Arba tiesiog grąžinti false
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Gauna visus rezultatus kaip asociatyvų masyvą.
+
+-     * @return array Rezultatų masyvas.
+
+-     */
+
+-    public function resultSet(): array {
+
+-        if ($this->execute()) { // Patikriname, ar įvykdymas buvo sėkmingas
+
+-            return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
+
+-        }
+
+-        return []; // Grąžinti tuščią masyvą, jei vykdymas nepavyko
+
+-    }
+
+-
+
+-    /**
+
+-     * Gauna vieną įrašą kaip asociatyvų masyvą.
+
+-     * @return mixed Vienas įrašas arba false, jei nerasta.
+
+-     */
+
+-    public function single() {
+
+-        if ($this->execute()) { // Patikriname, ar įvykdymas buvo sėkmingas
+
+-            return $this->stmt->fetch(PDO::FETCH_ASSOC);
+
+-        }
+
+-        return false; // Grąžinti false, jei vykdymas nepavyko
+
+-    }
+
+-
+
+-    /**
+
+-     * Gauna paveiktų eilučių skaičių (po INSERT, UPDATE, DELETE).
+
+-     * @return int Paveiktų eilučių skaičius.
+
+-     */
+
+-    public function rowCount(): int {
+
+-        return $this->stmt->rowCount();
+
+-    }
+
+-
+
+-    /**
+
+-     * Gauna paskutinio įterpto įrašo ID.
+
+-     * @return string|false Paskutinio ID reikšmė arba false, jei nepavyko.
+
+-     */
+
+-    public function lastInsertId() {
+
+-        return $this->dbh->lastInsertId();
+
+-    }
+
+-
+
+-    /**
+
+-     * Grąžina paskutinę įvykusią klaidą.
+
+-     * @return string|null Klaidos pranešimas.
+
+-     */
+
+-    public function getError(): ?string {
+
+-        return $this->error;
+
+-    }
+
+-}
+
+-?>
+\ No newline at end of file
++<?php
++
++// src/classes/Database.php
++
++
++
++class Database
++{
++
++    private string $host = DB_HOST;
++
++    private string $user = DB_USER;
++
++    private string $pass = DB_PASS;
++
++    private string $dbname = DB_NAME;
++
++
++
++    private PDO $dbh; // Database Handler
++
++    private PDOStatement $stmt; // Statement
++
++    private ?string $error = null;
++
++
++
++    public function __construct()
++    {
++
++        $dsn = 'mysql:host=' . $this->host . ';dbname=' . $this->dbname . ';charset=utf8mb4';
++
++        $options = [
++
++            PDO::ATTR_PERSISTENT => true,
++
++            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION, // Svarbu klaidų gaudymui
++
++            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
++
++            PDO::ATTR_EMULATE_PREPARES => false,
++
++        ];
++
++
++
++        try {
++
++            $this->dbh = new PDO($dsn, $this->user, $this->pass, $options);
++
++        } catch (PDOException $e) {
++
++            $this->error = $e->getMessage();
++
++            // Realiame projekte čia reikėtų detalesnio klaidų log'inimo, o ne die()
++
++            error_log("Database Connection Error: " . $this->error);
++
++            die("Nepavyko prisijungti prie duomenų bazės. Prašome bandyti vėliau.");
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Paruošia SQL užklausą vykdymui.
++
++     * @param string $sql SQL užklausa.
++
++     */
++
++    public function query(string $sql): void
++    {
++
++        try {
++
++            $this->stmt = $this->dbh->prepare($sql);
++
++        } catch (PDOException $e) {
++
++            $this->error = $e->getMessage();
++
++            error_log("Database Query Preparation Error: " . $this->error . " | SQL: " . $sql);
++
++            // Galima mesti išimtį toliau arba grąžinti false/null priklausomai nuo logikos
++
++            throw $e; // Mesti išimtį, kad būtų galima pagauti aukštesniame lygyje
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Susieja reikšmę su SQL užklausos parametru.
++
++     * @param string|int $param Parametro pavadinimas (pvz., :name) arba pozicija (?).
++
++     * @param mixed $value Reikšmė, kurią reikia susieti.
++
++     * @param int|null $type PDO::PARAM_* konstanta (pasirinktinai).
++
++     */
++
++    public function bind($param, $value, ?int $type = null): void
++    {
++
++        if (is_null($type)) {
++
++            switch (true) {
++
++                case is_int($value):
++
++                    $type = PDO::PARAM_INT;
++
++                    break;
++
++                case is_bool($value):
++
++                    $type = PDO::PARAM_BOOL;
++
++                    break;
++
++                case is_null($value):
++
++                    $type = PDO::PARAM_NULL;
++
++                    break;
++
++                default:
++
++                    $type = PDO::PARAM_STR;
++
++            }
++
++        }
++
++        $this->stmt->bindValue($param, $value, $type);
++
++    }
++
++
++
++    /**
++
++     * Įvykdo paruoštą SQL užklausą.
++
++     * @return bool True, jei sėkmingai, false - kitu atveju.
++
++     */
++
++    public function execute(): bool
++    {
++
++        try {
++
++            return $this->stmt->execute();
++
++        } catch (PDOException $e) { // Sugauta PDO išimtis vykdymo metu
++
++            $this->error = $e->getMessage();
++
++            // Pridedame detalesnį klaidų registravimą
++
++            ob_start(); // Pradedame išvesties buferizavimą
++
++            $this->stmt->debugDumpParams(); // Išvedame informaciją apie paruoštą užklausą ir susietus parametrus
++
++            $dump = ob_get_clean(); // Gauname buferio turinį ir išvalome jį
++
++            error_log("Database Execution Error: " . $this->error . "\nSQL Query (prepared): " . $this->stmt->queryString . "\nDebug Dump Params:\n" . $dump);
++
++            // Svarstyti, ar mesti išimtį, ar grąžinti false
++
++            // throw $e; // Jei norite, kad klaida būtų apdorojama aukščiau
++
++            return false; // Arba tiesiog grąžinti false
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Gauna visus rezultatus kaip asociatyvų masyvą.
++
++     * @return array Rezultatų masyvas.
++
++     */
++
++    public function resultSet(): array
++    {
++
++        if ($this->execute()) { // Patikriname, ar įvykdymas buvo sėkmingas
++
++            return $this->stmt->fetchAll(PDO::FETCH_ASSOC);
++
++        }
++
++        return []; // Grąžinti tuščią masyvą, jei vykdymas nepavyko
++
++    }
++
++
++
++    /**
++
++     * Gauna vieną įrašą kaip asociatyvų masyvą.
++
++     * @return mixed Vienas įrašas arba false, jei nerasta.
++
++     */
++
++    public function single()
++    {
++
++        if ($this->execute()) { // Patikriname, ar įvykdymas buvo sėkmingas
++
++            return $this->stmt->fetch(PDO::FETCH_ASSOC);
++
++        }
++
++        return false; // Grąžinti false, jei vykdymas nepavyko
++
++    }
++
++
++
++    /**
++
++     * Gauna paveiktų eilučių skaičių (po INSERT, UPDATE, DELETE).
++
++     * @return int Paveiktų eilučių skaičius.
++
++     */
++
++    public function rowCount(): int
++    {
++
++        return $this->stmt->rowCount();
++
++    }
++
++
++
++    /**
++
++     * Gauna paskutinio įterpto įrašo ID.
++
++     * @return string|false Paskutinio ID reikšmė arba false, jei nepavyko.
++
++     */
++
++    public function lastInsertId()
++    {
++
++        return $this->dbh->lastInsertId();
++
++    }
++
++
++
++    /**
++
++     * Grąžina paskutinę įvykusią klaidą.
++
++     * @return string|null Klaidos pranešimas.
++
++     */
++
++    public function getError(): ?string
++    {
++
++        return $this->error;
++
++    }
++
++}
+
+      ----------- end diff -----------
+
+   2) src/classes/Auth.php
+      ---------- begin diff ----------
+--- /app/src/classes/Auth.php
++++ /app/src/classes/Auth.php
+@@ -1,250 +1,501 @@
+-<?php
+
+-// src/classes/Auth.php
+
+-declare(strict_types=1); // Griežtas tipų tikrinimas
+
+-
+
+-class Auth {
+
+-    private Database $db;
+
+-    private string $usersTable;
+
+-
+
+-    public function __construct(Database $db) {
+
+-        $this->db = $db;
+
+-        // Naudojame konstantą TABLE_USERS, jei ji apibrėžta, kitu atveju 'vartotojai'
+
+-        $this->usersTable = defined('TABLE_USERS') ? TABLE_USERS : 'vartotojai';
+
+-    }
+
+-
+
+-    /**
+
+-     * Registruoja naują vartotoją sistemoje.
+
+-     *
+
+-     * @param string $username Vartotojo vardas.
+
+-     * @param string $email El. pašto adresas.
+
+-     * @param string $password Slaptažodis.
+
+-     * @param string $confirmPassword Pakartotas slaptažodis.
+
+-     * @return array Rezultatas: ['success' => true/false, 'message' => '...', 'errors' => [...]].
+
+-     */
+
+-    public function registerUser(string $username, string $email, string $password, string $confirmPassword): array {
+
+-        $errors = [];
+
+-        $username = trim($username);
+
+-        $email = trim($email);
+
+-
+
+-        // Vartotojo vardo validacija
+
+-        if (empty($username)) {
+
+-            $errors['username'] = 'Vartotojo vardas yra privalomas.';
+
+-        } elseif (strlen($username) < 3 || strlen($username) > 50) {
+
+-            $errors['username'] = 'Vartotojo vardas turi būti nuo 3 iki 50 simbolių ilgio.';
+
+-        } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
+
+-            $errors['username'] = 'Vartotojo vardas gali turėti tik raides (a-z, A-Z), skaičius (0-9) ir apatinį brūkšnį (_).';
+
+-        } else {
+
+-            $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE vartotojo_vardas = :username");
+
+-            $this->db->bind(':username', $username);
+
+-            if ($this->db->single()) {
+
+-                $errors['username'] = 'Toks vartotojo vardas jau užimtas.';
+
+-            }
+
+-        }
+
+-
+
+-        // El. pašto validacija
+
+-        if (empty($email)) {
+
+-            $errors['email'] = 'El. paštas yra privalomas.';
+
+-        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+
+-            $errors['email'] = 'Neteisingas el. pašto formatas.';
+
+-        } else {
+
+-            $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE el_pastas = :email");
+
+-            $this->db->bind(':email', $email);
+
+-            if ($this->db->single()) {
+
+-                $errors['email'] = 'Šis el. paštas jau registruotas.';
+
+-            }
+
+-        }
+
+-
+
+-        // Slaptažodžio validacija
+
+-        if (empty($password)) {
+
+-            $errors['password'] = 'Slaptažodis yra privalomas.';
+
+-        } elseif (strlen($password) < 8) { // Rekomenduojamas minimalus ilgis
+
+-            $errors['password'] = 'Slaptažodis turi būti bent 8 simbolių ilgio.';
+
+-        }
+
+-
+
+-        // Slaptažodžio patvirtinimo validacija
+
+-        if (empty($confirmPassword)) {
+
+-            $errors['confirm_password'] = 'Pakartokite slaptažodį.';
+
+-        } elseif ($password !== $confirmPassword) {
+
+-            $errors['confirm_password'] = 'Slaptažodžiai nesutampa.';
+
+-        }
+
+-
+
+-        if (!empty($errors)) {
+
+-            return ['success' => false, 'errors' => $errors];
+
+-        }
+
+-
+
+-        // Slaptažodžio maišos kodo (hash) kūrimas
+
+-        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
+
+-        if ($hashedPassword === false) {
+
+-            return ['success' => false, 'errors' => ['general' => 'Nepavyko užkoduoti slaptažodžio.']];
+
+-        }
+
+-
+
+-        // Įrašymas į duomenų bazę
+
+-        try {
+
+-            $this->db->query("INSERT INTO " . $this->usersTable . " (vartotojo_vardas, el_pastas, slaptazodis_hash, role) VALUES (:username, :email, :password_hash, :role)");
+
+-            $this->db->bind(':username', $username);
+
+-            $this->db->bind(':email', $email);
+
+-            $this->db->bind(':password_hash', $hashedPassword);
+
+-            $this->db->bind(':role', 'vartotojas'); // Nustatome numatytąją rolę
+
+-
+
+-            if ($this->db->execute()) {
+
+-                return ['success' => true, 'message' => 'Vartotojas sėkmingai užregistruotas. Galite prisijungti.'];
+
+-            } else {
+
+-                return ['success' => false, 'errors' => ['general' => 'Registracija nepavyko. Bandykite vėliau.']];
+
+-            }
+
+-        } catch (PDOException $e) {
+
+-            error_log("PDOException in registerUser: " . $e->getMessage());
+
+-            return ['success' => false, 'errors' => ['general' => 'Sistemos klaida registruojant vartotoją.']];
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Patikrina vartotojo prisijungimo duomenis ir sukuria sesiją.
+
+-     *
+
+-     * @param string $usernameOrEmail Vartotojo vardas arba el. paštas.
+
+-     * @param string $password Slaptažodis.
+
+-     * @return bool True, jei prisijungimas sėkmingas, false - kitu atveju.
+
+-     */
+
+-    public function login(string $usernameOrEmail, string $password): bool {
+
+-        $this->db->query("SELECT id, vartotojo_vardas, el_pastas, slaptazodis_hash, role FROM " . $this->usersTable . " WHERE vartotojo_vardas = :username_identifier OR el_pastas = :email_identifier");
+
+-        $this->db->bind(':username_identifier', $usernameOrEmail);
+
+-        $this->db->bind(':email_identifier', $usernameOrEmail);
+
+-        $user = $this->db->single();
+
+-
+
+-        if ($user && password_verify($password, $user['slaptazodis_hash'])) {
+
+-            $_SESSION['user_id'] = (int)$user['id'];
+
+-            $_SESSION['username'] = $user['vartotojo_vardas'];
+
+-            $_SESSION['user_role'] = $user['role'];
+
+-            return true;
+
+-        }
+
+-        return false;
+
+-    }
+
+-
+
+-    /**
+
+-     * Patikrina, ar vartotojas yra prisijungęs.
+
+-     * @return bool True, jei prisijungęs, false - kitu atveju.
+
+-     */
+
+-    public function isLoggedIn(): bool {
+
+-        return isset($_SESSION['user_id']);
+
+-    }
+
+-
+
+-    /**
+
+-     * Atjungia vartotoją (išvalo sesiją).
+
+-     */
+
+-    public function logout(): void {
+
+-        $_SESSION = [];
+
+-        if (ini_get("session.use_cookies")) {
+
+-            $params = session_get_cookie_params();
+
+-            setcookie(
+
+-                session_name(),
+
+-                '',
+
+-                time() - 42000,
+
+-                $params["path"],
+
+-                $params["domain"],
+
+-                $params["secure"],
+
+-                $params["httponly"]
+
+-            );
+
+-        }
+
+-        session_destroy();
+
+-    }
+
+-
+
+-    /**
+
+-     * Reikalauja, kad vartotojas būtų prisijungęs. Jei ne, nukreipia į prisijungimo puslapį.
+
+-     * @param string $redirectPage Puslapis, į kurį nukreipti, jei vartotojas neprisijungęs.
+
+-     * @param string|null $redirectAction Veiksmas, į kurį nukreipti (jei reikia).
+
+-     * @param int|null $redirectId ID, į kurį nukreipti (jei reikia).
+
+-     */
+
+-    public function requireLogin(string $redirectPage = 'login', ?string $redirectAction = null, ?int $redirectId = null): void {
+
+-        if (!$this->isLoggedIn()) {
+
+-            if (function_exists('set_flash_message')) {
+
+-                set_flash_message('error_message', "Norėdami pasiekti šį puslapį, turite prisijungti.");
+
+-            } else {
+
+-                $_SESSION['error_message'] = "Norėdami pasiekti šį puslapį, turite prisijungti.";
+
+-            }
+
+-
+
+-            if (function_exists('redirect')) {
+
+-                redirect($redirectPage, $redirectAction, $redirectId);
+
+-            } else {
+
+-                // Jei redirect funkcijos nėra, naudojame standartinį nukreipimą
+
+-                if ($redirectAction === null) {
+
+-                    header('Location: /' . $redirectPage);
+
+-                } elseif ($redirectId === null) {
+
+-                    header('Location: /' . $redirectPage . '/' . $redirectAction);
+
+-                } else {
+
+-                    header('Location: /' . $redirectPage . '/' . $redirectAction . '/' . $redirectId);
+
+-                }
+
+-                exit;
+
+-            }
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Reikalauja, kad vartotojas būtų administratorius.
+
+-     * Pirmiausia patikrina, ar vartotojas prisijungęs.
+
+-     * @param string $defaultRedirectPage Puslapis, į kurį nukreipti, jei vartotojas nėra admin (numatytasis - home).
+
+-     * @param string|null $defaultRedirectAction Veiksmas, į kurį nukreipti (jei reikia).
+
+-     * @param int|null $defaultRedirectId ID, į kurį nukreipti (jei reikia).
+
+-     * @param string $loginRedirectPage Puslapis, į kurį nukreipti, jei vartotojas neprisijungęs.
+
+-     */
+
+-    public function requireAdmin(string $defaultRedirectPage = 'home', ?string $defaultRedirectAction = null, ?int $defaultRedirectId = null, string $loginRedirectPage = 'login'): void {
+
+-        if (!$this->isLoggedIn()) {
+
+-            $this->requireLogin($loginRedirectPage); // Nukreipiam į prisijungimą
+
+-            return;
+
+-        }
+
+-
+
+-        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'administratorius') {
+
+-            $errorMessage = "Neturite teisių pasiekti šį resursą. Kreipkitės į administratorių.";
+
+-            if (function_exists('set_flash_message')) {
+
+-                set_flash_message('error_message', $errorMessage);
+
+-            } else {
+
+-                $_SESSION['error_message'] = $errorMessage;
+
+-            }
+
+-
+
+-            if (function_exists('redirect')) {
+
+-                redirect($defaultRedirectPage, $defaultRedirectAction, $defaultRedirectId);
+
+-            } else {
+
+-                // Jei redirect funkcijos nėra, naudojame standartinį nukreipimą
+
+-                if ($defaultRedirectAction === null) {
+
+-                    header('Location: /' . $defaultRedirectPage);
+
+-                } elseif ($defaultRedirectId === null) {
+
+-                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction);
+
+-                } else {
+
+-                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction . '/' . $defaultRedirectId);
+
+-                }
+
+-                exit;
+
+-            }
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Grąžina prisijungusio vartotojo ID.
+
+-     * @return int|null Vartotojo ID arba null, jei neprisijungęs.
+
+-     */
+
+-    public function getCurrentUserId(): ?int {
+
+-        return $this->isLoggedIn() ? (int)$_SESSION['user_id'] : null;
+
+-    }
+
+-
+
+-    /**
+
+-     * Grąžina prisijungusio vartotojo rolę.
+
+-     * @return string|null Vartotojo rolė arba null, jei neprisijungęs.
+
+-     */
+
+-    public function getCurrentUserRole(): ?string {
+
+-        return $this->isLoggedIn() && isset($_SESSION['user_role']) ? (string)$_SESSION['user_role'] : null;
+
+-    }
+
+-
+
+-    /**
+
+-     * Grąžina prisijungusio vartotojo vardą.
+
+-     * @return string|null Vartotojo vardas arba null, jei neprisijungęs.
+
+-     */
+
+-    public function getCurrentUsername(): ?string {
+
+-        return $this->isLoggedIn() && isset($_SESSION['username']) ? (string)$_SESSION['username'] : null;
+
+-    }
+
+-
+
+-    /**
+
+-     * Patikrina, ar dabartinis vartotojas yra administratorius.
+
+-     * @return bool True, jei administratorius, false - kitu atveju.
+
+-     */
+
+-    public function isAdmin(): bool {
+
+-        return $this->isLoggedIn() && $this->getCurrentUserRole() === 'administratorius';
+
+-    }
+
+-}
+
+-?>
+\ No newline at end of file
++<?php
++
++// src/classes/Auth.php
++
++declare(strict_types=1); // Griežtas tipų tikrinimas
++
++
++
++class Auth
++{
++
++    private Database $db;
++
++    private string $usersTable;
++
++
++
++    public function __construct(Database $db)
++    {
++
++        $this->db = $db;
++
++        // Naudojame konstantą TABLE_USERS, jei ji apibrėžta, kitu atveju 'vartotojai'
++
++        $this->usersTable = defined('TABLE_USERS') ? TABLE_USERS : 'vartotojai';
++
++    }
++
++
++
++    /**
++
++     * Registruoja naują vartotoją sistemoje.
++
++     *
++
++     * @param string $username Vartotojo vardas.
++
++     * @param string $email El. pašto adresas.
++
++     * @param string $password Slaptažodis.
++
++     * @param string $confirmPassword Pakartotas slaptažodis.
++
++     * @return array Rezultatas: ['success' => true/false, 'message' => '...', 'errors' => [...]].
++
++     */
++
++    public function registerUser(string $username, string $email, string $password, string $confirmPassword): array
++    {
++
++        $errors = [];
++
++        $username = trim($username);
++
++        $email = trim($email);
++
++
++
++        // Vartotojo vardo validacija
++
++        if (empty($username)) {
++
++            $errors['username'] = 'Vartotojo vardas yra privalomas.';
++
++        } elseif (strlen($username) < 3 || strlen($username) > 50) {
++
++            $errors['username'] = 'Vartotojo vardas turi būti nuo 3 iki 50 simbolių ilgio.';
++
++        } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
++
++            $errors['username'] = 'Vartotojo vardas gali turėti tik raides (a-z, A-Z), skaičius (0-9) ir apatinį brūkšnį (_).';
++
++        } else {
++
++            $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE vartotojo_vardas = :username");
++
++            $this->db->bind(':username', $username);
++
++            if ($this->db->single()) {
++
++                $errors['username'] = 'Toks vartotojo vardas jau užimtas.';
++
++            }
++
++        }
++
++
++
++        // El. pašto validacija
++
++        if (empty($email)) {
++
++            $errors['email'] = 'El. paštas yra privalomas.';
++
++        } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
++
++            $errors['email'] = 'Neteisingas el. pašto formatas.';
++
++        } else {
++
++            $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE el_pastas = :email");
++
++            $this->db->bind(':email', $email);
++
++            if ($this->db->single()) {
++
++                $errors['email'] = 'Šis el. paštas jau registruotas.';
++
++            }
++
++        }
++
++
++
++        // Slaptažodžio validacija
++
++        if (empty($password)) {
++
++            $errors['password'] = 'Slaptažodis yra privalomas.';
++
++        } elseif (strlen($password) < 8) { // Rekomenduojamas minimalus ilgis
++
++            $errors['password'] = 'Slaptažodis turi būti bent 8 simbolių ilgio.';
++
++        }
++
++
++
++        // Slaptažodžio patvirtinimo validacija
++
++        if (empty($confirmPassword)) {
++
++            $errors['confirm_password'] = 'Pakartokite slaptažodį.';
++
++        } elseif ($password !== $confirmPassword) {
++
++            $errors['confirm_password'] = 'Slaptažodžiai nesutampa.';
++
++        }
++
++
++
++        if (!empty($errors)) {
++
++            return ['success' => false, 'errors' => $errors];
++
++        }
++
++
++
++        // Slaptažodžio maišos kodo (hash) kūrimas
++
++        $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
++
++        if ($hashedPassword === false) {
++
++            return ['success' => false, 'errors' => ['general' => 'Nepavyko užkoduoti slaptažodžio.']];
++
++        }
++
++
++
++        // Įrašymas į duomenų bazę
++
++        try {
++
++            $this->db->query("INSERT INTO " . $this->usersTable . " (vartotojo_vardas, el_pastas, slaptazodis_hash, role) VALUES (:username, :email, :password_hash, :role)");
++
++            $this->db->bind(':username', $username);
++
++            $this->db->bind(':email', $email);
++
++            $this->db->bind(':password_hash', $hashedPassword);
++
++            $this->db->bind(':role', 'vartotojas'); // Nustatome numatytąją rolę
++
++
++
++            if ($this->db->execute()) {
++
++                return ['success' => true, 'message' => 'Vartotojas sėkmingai užregistruotas. Galite prisijungti.'];
++
++            } else {
++
++                return ['success' => false, 'errors' => ['general' => 'Registracija nepavyko. Bandykite vėliau.']];
++
++            }
++
++        } catch (PDOException $e) {
++
++            error_log("PDOException in registerUser: " . $e->getMessage());
++
++            return ['success' => false, 'errors' => ['general' => 'Sistemos klaida registruojant vartotoją.']];
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Patikrina vartotojo prisijungimo duomenis ir sukuria sesiją.
++
++     *
++
++     * @param string $usernameOrEmail Vartotojo vardas arba el. paštas.
++
++     * @param string $password Slaptažodis.
++
++     * @return bool True, jei prisijungimas sėkmingas, false - kitu atveju.
++
++     */
++
++    public function login(string $usernameOrEmail, string $password): bool
++    {
++
++        $this->db->query("SELECT id, vartotojo_vardas, el_pastas, slaptazodis_hash, role FROM " . $this->usersTable . " WHERE vartotojo_vardas = :username_identifier OR el_pastas = :email_identifier");
++
++        $this->db->bind(':username_identifier', $usernameOrEmail);
++
++        $this->db->bind(':email_identifier', $usernameOrEmail);
++
++        $user = $this->db->single();
++
++
++
++        if ($user && password_verify($password, $user['slaptazodis_hash'])) {
++
++            $_SESSION['user_id'] = (int)$user['id'];
++
++            $_SESSION['username'] = $user['vartotojo_vardas'];
++
++            $_SESSION['user_role'] = $user['role'];
++
++            return true;
++
++        }
++
++        return false;
++
++    }
++
++
++
++    /**
++
++     * Patikrina, ar vartotojas yra prisijungęs.
++
++     * @return bool True, jei prisijungęs, false - kitu atveju.
++
++     */
++
++    public function isLoggedIn(): bool
++    {
++
++        return isset($_SESSION['user_id']);
++
++    }
++
++
++
++    /**
++
++     * Atjungia vartotoją (išvalo sesiją).
++
++     */
++
++    public function logout(): void
++    {
++
++        $_SESSION = [];
++
++        if (ini_get("session.use_cookies")) {
++
++            $params = session_get_cookie_params();
++
++            setcookie(
++                session_name(),
++                '',
++                time() - 42000,
++                $params["path"],
++                $params["domain"],
++                $params["secure"],
++                $params["httponly"]
++            );
++
++        }
++
++        session_destroy();
++
++    }
++
++
++
++    /**
++
++     * Reikalauja, kad vartotojas būtų prisijungęs. Jei ne, nukreipia į prisijungimo puslapį.
++
++     * @param string $redirectPage Puslapis, į kurį nukreipti, jei vartotojas neprisijungęs.
++
++     * @param string|null $redirectAction Veiksmas, į kurį nukreipti (jei reikia).
++
++     * @param int|null $redirectId ID, į kurį nukreipti (jei reikia).
++
++     */
++
++    public function requireLogin(string $redirectPage = 'login', ?string $redirectAction = null, ?int $redirectId = null): void
++    {
++
++        if (!$this->isLoggedIn()) {
++
++            if (function_exists('set_flash_message')) {
++
++                set_flash_message('error_message', "Norėdami pasiekti šį puslapį, turite prisijungti.");
++
++            } else {
++
++                $_SESSION['error_message'] = "Norėdami pasiekti šį puslapį, turite prisijungti.";
++
++            }
++
++
++
++            if (function_exists('redirect')) {
++
++                redirect($redirectPage, $redirectAction, $redirectId);
++
++            } else {
++
++                // Jei redirect funkcijos nėra, naudojame standartinį nukreipimą
++
++                if ($redirectAction === null) {
++
++                    header('Location: /' . $redirectPage);
++
++                } elseif ($redirectId === null) {
++
++                    header('Location: /' . $redirectPage . '/' . $redirectAction);
++
++                } else {
++
++                    header('Location: /' . $redirectPage . '/' . $redirectAction . '/' . $redirectId);
++
++                }
++
++                exit;
++
++            }
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Reikalauja, kad vartotojas būtų administratorius.
++
++     * Pirmiausia patikrina, ar vartotojas prisijungęs.
++
++     * @param string $defaultRedirectPage Puslapis, į kurį nukreipti, jei vartotojas nėra admin (numatytasis - home).
++
++     * @param string|null $defaultRedirectAction Veiksmas, į kurį nukreipti (jei reikia).
++
++     * @param int|null $defaultRedirectId ID, į kurį nukreipti (jei reikia).
++
++     * @param string $loginRedirectPage Puslapis, į kurį nukreipti, jei vartotojas neprisijungęs.
++
++     */
++
++    public function requireAdmin(string $defaultRedirectPage = 'home', ?string $defaultRedirectAction = null, ?int $defaultRedirectId = null, string $loginRedirectPage = 'login'): void
++    {
++
++        if (!$this->isLoggedIn()) {
++
++            $this->requireLogin($loginRedirectPage); // Nukreipiam į prisijungimą
++
++            return;
++
++        }
++
++
++
++        if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'administratorius') {
++
++            $errorMessage = "Neturite teisių pasiekti šį resursą. Kreipkitės į administratorių.";
++
++            if (function_exists('set_flash_message')) {
++
++                set_flash_message('error_message', $errorMessage);
++
++            } else {
++
++                $_SESSION['error_message'] = $errorMessage;
++
++            }
++
++
++
++            if (function_exists('redirect')) {
++
++                redirect($defaultRedirectPage, $defaultRedirectAction, $defaultRedirectId);
++
++            } else {
++
++                // Jei redirect funkcijos nėra, naudojame standartinį nukreipimą
++
++                if ($defaultRedirectAction === null) {
++
++                    header('Location: /' . $defaultRedirectPage);
++
++                } elseif ($defaultRedirectId === null) {
++
++                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction);
++
++                } else {
++
++                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction . '/' . $defaultRedirectId);
++
++                }
++
++                exit;
++
++            }
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Grąžina prisijungusio vartotojo ID.
++
++     * @return int|null Vartotojo ID arba null, jei neprisijungęs.
++
++     */
++
++    public function getCurrentUserId(): ?int
++    {
++
++        return $this->isLoggedIn() ? (int)$_SESSION['user_id'] : null;
++
++    }
++
++
++
++    /**
++
++     * Grąžina prisijungusio vartotojo rolę.
++
++     * @return string|null Vartotojo rolė arba null, jei neprisijungęs.
++
++     */
++
++    public function getCurrentUserRole(): ?string
++    {
++
++        return $this->isLoggedIn() && isset($_SESSION['user_role']) ? (string)$_SESSION['user_role'] : null;
++
++    }
++
++
++
++    /**
++
++     * Grąžina prisijungusio vartotojo vardą.
++
++     * @return string|null Vartotojo vardas arba null, jei neprisijungęs.
++
++     */
++
++    public function getCurrentUsername(): ?string
++    {
++
++        return $this->isLoggedIn() && isset($_SESSION['username']) ? (string)$_SESSION['username'] : null;
++
++    }
++
++
++
++    /**
++
++     * Patikrina, ar dabartinis vartotojas yra administratorius.
++
++     * @return bool True, jei administratorius, false - kitu atveju.
++
++     */
++
++    public function isAdmin(): bool
++    {
++
++        return $this->isLoggedIn() && $this->getCurrentUserRole() === 'administratorius';
++
++    }
++
++}
+
+      ----------- end diff -----------
+
+   3) src/classes/Company.php
+      ---------- begin diff ----------
+--- /app/src/classes/Company.php
++++ /app/src/classes/Company.php
+@@ -1,70 +1,143 @@
+-<?php
+
+-// src/classes/Company.php
+
+-declare(strict_types=1);
+
+-
+
+-class Company {
+
+-    private Database $db;
+
+-    private string $companiesTable;
+
+-
+
+-    public function __construct(Database $db) {
+
+-        $this->db = $db;
+
+-        $this->companiesTable = defined('TABLE_COMPANIES') ? TABLE_COMPANIES : 'imones_rekvizitai';
+
+-    }
+
+-
+
+-    public function getAllCompanies(?string $searchTerm = null): array {
+
+-        // Parenkame tik reikiamus stulpelius sąrašo rodymui, kad būtų efektyviau
+
+-        $sql = "SELECT id, pavadinimas, imones_kodas, pvm_kodas, logotipas FROM " . $this->companiesTable;
+
+-
+
+-        $trimmedSearchTerm = null;
+
+-        if ($searchTerm !== null) {
+
+-            $trimmedSearchTerm = trim($searchTerm);
+
+-        }
+
+-
+
+-        if ($trimmedSearchTerm && !empty($trimmedSearchTerm)) { // Tikriname, ar po trim() liko ne tuščia reikšmė
+
+-            // Jei yra paieškos terminas, pridedame WHERE sąlygą
+
+-            // Naudojame skirtingus placeholderių pavadinimus
+
+-            $sql .= " WHERE pavadinimas LIKE :searchPavadinimas OR imones_kodas LIKE :searchImonesKodas";
+
+-        }
+
+-
+
+-        $sql .= " ORDER BY pavadinimas ASC"; // Rūšiuojame pagal pavadinimą
+
+-
+
+-        $this->db->query($sql);
+
+-
+
+-        if ($trimmedSearchTerm && !empty($trimmedSearchTerm)) { // Susiejame parametrus, jei jie naudojami SQL
+
+-            $searchTermWildcard = '%' . $trimmedSearchTerm . '%';
+
+-            $this->db->bind(':searchPavadinimas', $searchTermWildcard);
+
+-            $this->db->bind(':searchImonesKodas', $searchTermWildcard);
+
+-        }
+
+-        return $this->db->resultSet();
+
+-    }
+
+-
+
+-    public function getCompanyById(int $id) {
+
+-        $this->db->query("SELECT * FROM " . $this->companiesTable . " WHERE id = :id");
+
+-        $this->db->bind(':id', $id);
+
+-        return $this->db->single();
+
+-    }
+
+-
+
+-    /**
+
+-     * Ieško įmonės pagal jos kodą.
+
+-     * @param string $code Įmonės kodas.
+
+-     * @return mixed Įmonės duomenys (masyvas) arba false, jei nerasta.
+
+-     */
+
+-    public function findCompanyByCode(string $code) {
+
+-        $this->db->query("SELECT id FROM " . $this->companiesTable . " WHERE imones_kodas = :imones_kodas");
+
+-        $this->db->bind(':imones_kodas', $code);
+
+-        return $this->db->single();
+
+-    }
+
+-    /**
+
+-     * Sukuria naują įmonę.
+
+-     * @param array $data Duomenys iš formos. Papildomai tikisi 'logotipas_filename' jei logotipas buvo įkeltas.
+
+-     * @return bool True, jei sėkmingai, false - kitu atveju.
+
+-     */
+
+-    public function createCompany(array $data): bool {
+
+-        if (empty($data['pavadinimas']) || empty($data['imones_kodas'])) {
+
+-            return false;
+
+-        }
+
+-
+
+-        try {
+
++<?php
++
++// src/classes/Company.php
++
++declare(strict_types=1);
++
++
++
++class Company
++{
++
++    private Database $db;
++
++    private string $companiesTable;
++
++
++
++    public function __construct(Database $db)
++    {
++
++        $this->db = $db;
++
++        $this->companiesTable = defined('TABLE_COMPANIES') ? TABLE_COMPANIES : 'imones_rekvizitai';
++
++    }
++
++
++
++    public function getAllCompanies(?string $searchTerm = null): array
++    {
++
++        // Parenkame tik reikiamus stulpelius sąrašo rodymui, kad būtų efektyviau
++
++        $sql = "SELECT id, pavadinimas, imones_kodas, pvm_kodas, logotipas FROM " . $this->companiesTable;
++
++
++
++        $trimmedSearchTerm = null;
++
++        if ($searchTerm !== null) {
++
++            $trimmedSearchTerm = trim($searchTerm);
++
++        }
++
++
++
++        if ($trimmedSearchTerm && !empty($trimmedSearchTerm)) { // Tikriname, ar po trim() liko ne tuščia reikšmė
++
++            // Jei yra paieškos terminas, pridedame WHERE sąlygą
++
++            // Naudojame skirtingus placeholderių pavadinimus
++
++            $sql .= " WHERE pavadinimas LIKE :searchPavadinimas OR imones_kodas LIKE :searchImonesKodas";
++
++        }
++
++
++
++        $sql .= " ORDER BY pavadinimas ASC"; // Rūšiuojame pagal pavadinimą
++
++
++
++        $this->db->query($sql);
++
++
++
++        if ($trimmedSearchTerm && !empty($trimmedSearchTerm)) { // Susiejame parametrus, jei jie naudojami SQL
++
++            $searchTermWildcard = '%' . $trimmedSearchTerm . '%';
++
++            $this->db->bind(':searchPavadinimas', $searchTermWildcard);
++
++            $this->db->bind(':searchImonesKodas', $searchTermWildcard);
++
++        }
++
++        return $this->db->resultSet();
++
++    }
++
++
++
++    public function getCompanyById(int $id)
++    {
++
++        $this->db->query("SELECT * FROM " . $this->companiesTable . " WHERE id = :id");
++
++        $this->db->bind(':id', $id);
++
++        return $this->db->single();
++
++    }
++
++
++
++    /**
++
++     * Ieško įmonės pagal jos kodą.
++
++     * @param string $code Įmonės kodas.
++
++     * @return mixed Įmonės duomenys (masyvas) arba false, jei nerasta.
++
++     */
++
++    public function findCompanyByCode(string $code)
++    {
++
++        $this->db->query("SELECT id FROM " . $this->companiesTable . " WHERE imones_kodas = :imones_kodas");
++
++        $this->db->bind(':imones_kodas', $code);
++
++        return $this->db->single();
++
++    }
++
++    /**
++
++     * Sukuria naują įmonę.
++
++     * @param array $data Duomenys iš formos. Papildomai tikisi 'logotipas_filename' jei logotipas buvo įkeltas.
++
++     * @return bool True, jei sėkmingai, false - kitu atveju.
++
++     */
++
++    public function createCompany(array $data): bool
++    {
++
++        if (empty($data['pavadinimas']) || empty($data['imones_kodas'])) {
++
++            return false;
++
++        }
++
++
++
++        try {
++
+             $sql = "INSERT INTO " . $this->companiesTable . "
+
+                     (pavadinimas, imones_kodas, pvm_kodas, adresas_salis, adresas_miestas, adresas_gatve, adresas_pasto_kodas,
+
+                     telefonas, el_pastas, banko_pavadinimas, banko_saskaita, kontaktinis_asmuo, pastabos,
+
+@@ -72,122 +145,243 @@
+                     VALUES
+
+                     (:pavadinimas, :imones_kodas, :pvm_kodas, :adresas_salis, :adresas_miestas, :adresas_gatve, :adresas_pasto_kodas,
+
+                     :telefonas, :el_pastas, :banko_pavadinimas, :banko_saskaita, :kontaktinis_asmuo, :pastabos,
+
+-                    :logotipas, :vadovas_vardas_pavarde, :tinklalapis, :darbo_laikas)";
+
+-            $this->db->query($sql);
+
+-
+
+-            $this->db->bind(':pavadinimas', $data['pavadinimas']);
+
+-            $this->db->bind(':imones_kodas', $data['imones_kodas']);
+
+-            $this->db->bind(':pvm_kodas', $data['pvm_kodas'] ?? null);
+
+-            $this->db->bind(':adresas_salis', $data['adresas_salis'] ?? null);
+
+-            $this->db->bind(':adresas_miestas', $data['adresas_miestas'] ?? null);
+
+-            $this->db->bind(':adresas_gatve', $data['adresas_gatve'] ?? null);
+
+-            $this->db->bind(':adresas_pasto_kodas', $data['adresas_pasto_kodas'] ?? null);
+
+-            $this->db->bind(':telefonas', $data['telefonas'] ?? null);
+
+-            $this->db->bind(':el_pastas', $data['el_pastas'] ?? null);
+
+-            $this->db->bind(':banko_pavadinimas', $data['banko_pavadinimas'] ?? null);
+
+-            $this->db->bind(':banko_saskaita', $data['banko_saskaita'] ?? null);
+
+-            $this->db->bind(':kontaktinis_asmuo', $data['kontaktinis_asmuo'] ?? null);
+
+-            $this->db->bind(':pastabos', $data['pastabos'] ?? null);
+
+-
+
+-            // Nauji laukai
+
+-            $this->db->bind(':logotipas', $data['logotipas_filename'] ?? null); // Tikimės, kad failo vardas bus perduotas čia
+
+-            $this->db->bind(':vadovas_vardas_pavarde', $data['vadovas_vardas_pavarde'] ?? null);
+
+-            $this->db->bind(':tinklalapis', $data['tinklalapis'] ?? null);
+
+-            $this->db->bind(':darbo_laikas', $data['darbo_laikas'] ?? null);
+
+-
+
+-            return $this->db->execute();
+
+-        } catch (PDOException $e) {
+
+-            error_log("Error creating company: " . $e->getMessage() . " Data: " . print_r($data, true));
+
+-            return false;
+
+-        }
+
+-    }
+
+-
+
+-    /**
+
+-     * Atnaujina esamos įmonės duomenis.
+
+-     * @param int $id Įmonės ID.
+
+-     * @param array $data Duomenys iš formos. Papildomai tikisi 'logotipas_filename' jei logotipas buvo įkeltas/pakeistas.
+
+-     * @return bool True, jei sėkmingai, false - kitu atveju.
+
+-     */
+
+-    public function updateCompany(int $id, array $data): bool {
+
+-        if (empty($data['pavadinimas']) || empty($data['imones_kodas'])) {
+
+-            return false;
+
+-        }
+
+-        try {
+
+-            // Dinamiškai formuojame SET dalį, kad logotipas būtų atnaujintas tik jei pateiktas naujas
+
+-            $set_parts = [
+
+-                "pavadinimas = :pavadinimas",
+
+-                "imones_kodas = :imones_kodas",
+
+-                "pvm_kodas = :pvm_kodas",
+
+-                "adresas_salis = :adresas_salis",
+
+-                "adresas_miestas = :adresas_miestas",
+
+-                "adresas_gatve = :adresas_gatve",
+
+-                "adresas_pasto_kodas = :adresas_pasto_kodas",
+
+-                "telefonas = :telefonas",
+
+-                "el_pastas = :el_pastas",
+
+-                "banko_pavadinimas = :banko_pavadinimas",
+
+-                "banko_saskaita = :banko_saskaita",
+
+-                "kontaktinis_asmuo = :kontaktinis_asmuo",
+
+-                "pastabos = :pastabos",
+
+-                "vadovas_vardas_pavarde = :vadovas_vardas_pavarde",
+
+-                "tinklalapis = :tinklalapis",
+
+-                "darbo_laikas = :darbo_laikas"
+
+-            ];
+
+-            // Jei 'logotipas_filename' yra $data masyve (net jei null, pvz., trynimui), įtraukiame jį
+
+-            if (array_key_exists('logotipas_filename', $data)) {
+
+-                $set_parts[] = "logotipas = :logotipas";
+
+-            }
+
+-
+
+-            $sql = "UPDATE " . $this->companiesTable . " SET " . implode(", ", $set_parts) . " WHERE id = :id";
+
+-            $this->db->query($sql);
+
+-
+
+-            $this->db->bind(':id', $id);
+
+-            $this->db->bind(':pavadinimas', $data['pavadinimas']);
+
+-            $this->db->bind(':imones_kodas', $data['imones_kodas']);
+
+-            $this->db->bind(':pvm_kodas', $data['pvm_kodas'] ?? null);
+
+-            $this->db->bind(':adresas_salis', $data['adresas_salis'] ?? null);
+
+-            $this->db->bind(':adresas_miestas', $data['adresas_miestas'] ?? null);
+
+-            $this->db->bind(':adresas_gatve', $data['adresas_gatve'] ?? null);
+
+-            $this->db->bind(':adresas_pasto_kodas', $data['adresas_pasto_kodas'] ?? null);
+
+-            $this->db->bind(':telefonas', $data['telefonas'] ?? null);
+
+-            $this->db->bind(':el_pastas', $data['el_pastas'] ?? null);
+
+-            $this->db->bind(':banko_pavadinimas', $data['banko_pavadinimas'] ?? null);
+
+-            $this->db->bind(':banko_saskaita', $data['banko_saskaita'] ?? null);
+
+-            $this->db->bind(':kontaktinis_asmuo', $data['kontaktinis_asmuo'] ?? null);
+
+-            $this->db->bind(':pastabos', $data['pastabos'] ?? null);
+
+-
+
+-            // Nauji laukai
+
+-            if (array_key_exists('logotipas_filename', $data)) {
+
+-                $this->db->bind(':logotipas', $data['logotipas_filename']); // Gali būti null, jei logotipas pašalintas
+
+-            }
+
+-            $this->db->bind(':vadovas_vardas_pavarde', $data['vadovas_vardas_pavarde'] ?? null);
+
+-            $this->db->bind(':tinklalapis', $data['tinklalapis'] ?? null);
+
+-            $this->db->bind(':darbo_laikas', $data['darbo_laikas'] ?? null);
+
+-
+
+-            return $this->db->execute();
+
+-        } catch (PDOException $e) {
+
+-            error_log("Error updating company ID {$id}: " . $e->getMessage() . " Data: " . print_r($data, true));
+
+-            return false;
+
+-        }
+
+-    }
+
+-
+
+-    public function deleteCompany(int $id): bool {
+
+-        // Prieš trinant įrašą iš DB, reikėtų ištrinti ir susijusį logotipo failą
+
+-        $company = $this->getCompanyById($id);
+
+-        if ($company && !empty($company['logotipas'])) {
+
+-            $logoPath = __DIR__ . '/../../public/uploads/logos/' . $company['logotipas'];
+
+-            if (file_exists($logoPath)) {
+
+-                unlink($logoPath); // Būtina pasirūpinti teisėmis
+
+-            }
+
+-        }
+
+-
+
+-        try {
+
+-            $this->db->query("DELETE FROM " . $this->companiesTable . " WHERE id = :id");
+
+-            $this->db->bind(':id', $id);
+
+-            return $this->db->execute();
+
+-        } catch (PDOException $e) {
+
+-            error_log("Error deleting company ID {$id}: " . $e->getMessage());
+
+-            return false;
+
+-        }
+
+-    }
+
+-}
+
+-?>
+
++                    :logotipas, :vadovas_vardas_pavarde, :tinklalapis, :darbo_laikas)";
++
++            $this->db->query($sql);
++
++
++
++            $this->db->bind(':pavadinimas', $data['pavadinimas']);
++
++            $this->db->bind(':imones_kodas', $data['imones_kodas']);
++
++            $this->db->bind(':pvm_kodas', $data['pvm_kodas'] ?? null);
++
++            $this->db->bind(':adresas_salis', $data['adresas_salis'] ?? null);
++
++            $this->db->bind(':adresas_miestas', $data['adresas_miestas'] ?? null);
++
++            $this->db->bind(':adresas_gatve', $data['adresas_gatve'] ?? null);
++
++            $this->db->bind(':adresas_pasto_kodas', $data['adresas_pasto_kodas'] ?? null);
++
++            $this->db->bind(':telefonas', $data['telefonas'] ?? null);
++
++            $this->db->bind(':el_pastas', $data['el_pastas'] ?? null);
++
++            $this->db->bind(':banko_pavadinimas', $data['banko_pavadinimas'] ?? null);
++
++            $this->db->bind(':banko_saskaita', $data['banko_saskaita'] ?? null);
++
++            $this->db->bind(':kontaktinis_asmuo', $data['kontaktinis_asmuo'] ?? null);
++
++            $this->db->bind(':pastabos', $data['pastabos'] ?? null);
++
++
++
++            // Nauji laukai
++
++            $this->db->bind(':logotipas', $data['logotipas_filename'] ?? null); // Tikimės, kad failo vardas bus perduotas čia
++
++            $this->db->bind(':vadovas_vardas_pavarde', $data['vadovas_vardas_pavarde'] ?? null);
++
++            $this->db->bind(':tinklalapis', $data['tinklalapis'] ?? null);
++
++            $this->db->bind(':darbo_laikas', $data['darbo_laikas'] ?? null);
++
++
++
++            return $this->db->execute();
++
++        } catch (PDOException $e) {
++
++            error_log("Error creating company: " . $e->getMessage() . " Data: " . print_r($data, true));
++
++            return false;
++
++        }
++
++    }
++
++
++
++    /**
++
++     * Atnaujina esamos įmonės duomenis.
++
++     * @param int $id Įmonės ID.
++
++     * @param array $data Duomenys iš formos. Papildomai tikisi 'logotipas_filename' jei logotipas buvo įkeltas/pakeistas.
++
++     * @return bool True, jei sėkmingai, false - kitu atveju.
++
++     */
++
++    public function updateCompany(int $id, array $data): bool
++    {
++
++        if (empty($data['pavadinimas']) || empty($data['imones_kodas'])) {
++
++            return false;
++
++        }
++
++        try {
++
++            // Dinamiškai formuojame SET dalį, kad logotipas būtų atnaujintas tik jei pateiktas naujas
++
++            $set_parts = [
++
++                "pavadinimas = :pavadinimas",
++
++                "imones_kodas = :imones_kodas",
++
++                "pvm_kodas = :pvm_kodas",
++
++                "adresas_salis = :adresas_salis",
++
++                "adresas_miestas = :adresas_miestas",
++
++                "adresas_gatve = :adresas_gatve",
++
++                "adresas_pasto_kodas = :adresas_pasto_kodas",
++
++                "telefonas = :telefonas",
++
++                "el_pastas = :el_pastas",
++
++                "banko_pavadinimas = :banko_pavadinimas",
++
++                "banko_saskaita = :banko_saskaita",
++
++                "kontaktinis_asmuo = :kontaktinis_asmuo",
++
++                "pastabos = :pastabos",
++
++                "vadovas_vardas_pavarde = :vadovas_vardas_pavarde",
++
++                "tinklalapis = :tinklalapis",
++
++                "darbo_laikas = :darbo_laikas"
++
++            ];
++
++            // Jei 'logotipas_filename' yra $data masyve (net jei null, pvz., trynimui), įtraukiame jį
++
++            if (array_key_exists('logotipas_filename', $data)) {
++
++                $set_parts[] = "logotipas = :logotipas";
++
++            }
++
++
++
++            $sql = "UPDATE " . $this->companiesTable . " SET " . implode(", ", $set_parts) . " WHERE id = :id";
++
++            $this->db->query($sql);
++
++
++
++            $this->db->bind(':id', $id);
++
++            $this->db->bind(':pavadinimas', $data['pavadinimas']);
++
++            $this->db->bind(':imones_kodas', $data['imones_kodas']);
++
++            $this->db->bind(':pvm_kodas', $data['pvm_kodas'] ?? null);
++
++            $this->db->bind(':adresas_salis', $data['adresas_salis'] ?? null);
++
++            $this->db->bind(':adresas_miestas', $data['adresas_miestas'] ?? null);
++
++            $this->db->bind(':adresas_gatve', $data['adresas_gatve'] ?? null);
++
++            $this->db->bind(':adresas_pasto_kodas', $data['adresas_pasto_kodas'] ?? null);
++
++            $this->db->bind(':telefonas', $data['telefonas'] ?? null);
++
++            $this->db->bind(':el_pastas', $data['el_pastas'] ?? null);
++
++            $this->db->bind(':banko_pavadinimas', $data['banko_pavadinimas'] ?? null);
++
++            $this->db->bind(':banko_saskaita', $data['banko_saskaita'] ?? null);
++
++            $this->db->bind(':kontaktinis_asmuo', $data['kontaktinis_asmuo'] ?? null);
++
++            $this->db->bind(':pastabos', $data['pastabos'] ?? null);
++
++
++
++            // Nauji laukai
++
++            if (array_key_exists('logotipas_filename', $data)) {
++
++                $this->db->bind(':logotipas', $data['logotipas_filename']); // Gali būti null, jei logotipas pašalintas
++
++            }
++
++            $this->db->bind(':vadovas_vardas_pavarde', $data['vadovas_vardas_pavarde'] ?? null);
++
++            $this->db->bind(':tinklalapis', $data['tinklalapis'] ?? null);
++
++            $this->db->bind(':darbo_laikas', $data['darbo_laikas'] ?? null);
++
++
++
++            return $this->db->execute();
++
++        } catch (PDOException $e) {
++
++            error_log("Error updating company ID {$id}: " . $e->getMessage() . " Data: " . print_r($data, true));
++
++            return false;
++
++        }
++
++    }
++
++
++
++    public function deleteCompany(int $id): bool
++    {
++
++        // Prieš trinant įrašą iš DB, reikėtų ištrinti ir susijusį logotipo failą
++
++        $company = $this->getCompanyById($id);
++
++        if ($company && !empty($company['logotipas'])) {
++
++            $logoPath = __DIR__ . '/../../public/uploads/logos/' . $company['logotipas'];
++
++            if (file_exists($logoPath)) {
++
++                unlink($logoPath); // Būtina pasirūpinti teisėmis
++
++            }
++
++        }
++
++
++
++        try {
++
++            $this->db->query("DELETE FROM " . $this->companiesTable . " WHERE id = :id");
++
++            $this->db->bind(':id', $id);
++
++            return $this->db->execute();
++
++        } catch (PDOException $e) {
++
++            error_log("Error deleting company ID {$id}: " . $e->getMessage());
++
++            return false;
++
++        }
++
++    }
++
++}
++
++?>
++
+
+      ----------- end diff -----------
+
+   4) src/helpers.php
+      ---------- begin diff ----------
+--- /app/src/helpers.php
++++ /app/src/helpers.php
+@@ -1,4 +1,5 @@
+ <?php
++
+ // src/helpers.php
+
+ /**
+@@ -8,7 +9,8 @@
+  * @param string|null $string Tekstas, kurį reikia apdoroti.
+  * @return string Apdorotas tekstas.
+  */
+-function e(?string $string): string {
++function e(?string $string): string
++{
+     return htmlspecialchars((string)$string, ENT_QUOTES, 'UTF-8');
+ }
+
+@@ -20,7 +22,8 @@
+  * @param int|null $id Įrašo ID (jei reikia)
+  * @param array $params Papildomi parametrai
+  */
+-function redirect(string $page, ?string $action = null, ?int $id = null, array $params = []): void {
++function redirect(string $page, ?string $action = null, ?int $id = null, array $params = []): void
++{
+     $url = url($page, $action, $id, $params);
+     header("Location: " . $url);
+     exit;
+@@ -32,7 +35,8 @@
+  * @param string $name Pranešimo pavadinimas (pvz., 'success_message', 'error_message').
+  * @param string $message Pranešimo tekstas.
+  */
+-function set_flash_message(string $name, string $message): void {
++function set_flash_message(string $name, string $message): void
++{
+     $_SESSION[$name] = $message;
+ }
+
+@@ -42,7 +46,8 @@
+  * @param string $name Pranešimo pavadinimas.
+  * @return string|null Pranešimo tekstas arba null, jei nėra.
+  */
+-function get_flash_message(string $name): ?string {
++function get_flash_message(string $name): ?string
++{
+     if (isset($_SESSION[$name])) {
+         $message = $_SESSION[$name];
+         unset($_SESSION[$name]);
+@@ -60,9 +65,10 @@
+  * @param array $params Papildomi parametrai (pvz., ['search_query' => 'test'])
+  * @return string Sugeneruota URL nuoroda
+  */
+-function url(string $page, ?string $action = null, ?int $id = null, array $params = []): string {
++function url(string $page, ?string $action = null, ?int $id = null, array $params = []): string
++{
+     $base_url = '';
+-
++
+     if ($action === null) {
+         // Nuoroda į pagrindinį puslapį: /home
+         $url = $base_url . '/' . $page;
+@@ -73,13 +79,13 @@
+         // Nuoroda į veiksmą su ID: /companies/view/123
+         $url = $base_url . '/' . $page . '/' . $action . '/' . $id;
+     }
+-
++
+     // Pridedame papildomus parametrus jei yra
+     if (!empty($params)) {
+         $query_string = http_build_query($params);
+         $url .= '?' . $query_string;
+     }
+-
++
+     return $url;
+ }
+
+@@ -91,7 +97,8 @@
+  * @return array Rezultatas: ['success' => bool, 'filename' => ?string, 'error' => ?string]
+  *               'filename' yra naujo failo vardas sėkmės atveju, arba $current_logo_filename jei nieko neįkelta/klaida.
+  */
+-function handle_logo_upload(array $file_input, ?string $current_logo_filename = null): array {
++function handle_logo_upload(array $file_input, ?string $current_logo_filename = null): array
++{
+     if (isset($file_input['name']) && $file_input['error'] === UPLOAD_ERR_OK) {
+         $filename = $file_input['name'];
+         $temp_path = $file_input['tmp_name'];
+@@ -103,7 +110,7 @@
+         $max_filesize = 2 * 1024 * 1024; // 2MB
+
+         $actual_mime_type = mime_content_type($temp_path);
+-        if (!in_array(strtolower($actual_mime_type), $allowed_mime_types)) {
++        if (!in_array(strtolower($actual_mime_type), $allowed_mime_types, true)) {
+             return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo tipas. Leidžiama JPG, PNG, GIF.'];
+         }
+         if ($filesize > $max_filesize) {
+@@ -111,10 +118,10 @@
+         }
+
+         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+-        if(!in_array($extension, $allowed_extensions)){
++        if (!in_array($extension, $allowed_extensions, true)) {
+             return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo plėtinys. Leidžiama JPG, JPEG, PNG, GIF.'];
+         }
+-
++
+         $new_filename = uniqid('logo_', true) . '.' . $extension;
+         $destination = LOGO_UPLOAD_PATH . $new_filename;
+
+@@ -130,4 +137,4 @@
+         return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Failo įkėlimo klaida. Kodas: ' . $file_input['error']];
+     }
+     return ['success' => true, 'filename' => $current_logo_filename, 'error' => null]; // Nebuvo bandoma įkelti naujo failo
+-}
+\ No newline at end of file
++}
+
+      ----------- end diff -----------
+
+   5) public/index.php
+      ---------- begin diff ----------
+--- /app/public/index.php
++++ /app/public/index.php
+@@ -1,371 +1,751 @@
+-<?php
+
+-// public/index.php
+
+-declare(strict_types=1);
+
+-
+
+-session_start();
+
+-
+
+-require_once __DIR__ . '/../config/database.php';
+
+-require_once __DIR__ . '/../src/helpers.php';
+
+-require_once __DIR__ . '/../src/classes/Database.php';
+
+-require_once __DIR__ . '/../src/classes/Auth.php';
+
+-require_once __DIR__ . '/../src/classes/Company.php';
+
+-
+
+-ini_set('display_errors', "1");
+
+-ini_set('display_startup_errors', "1");
+
+-error_reporting(E_ALL);
+
+-
+
+-define('LOGO_UPLOAD_DIR_PUBLIC', 'uploads/logos/');
+
+-define('LOGO_UPLOAD_PATH', __DIR__ . '/uploads/logos/');
+
+-
+
+-if (!is_dir(LOGO_UPLOAD_PATH)) {
+
+-    if (!mkdir(LOGO_UPLOAD_PATH, 0775, true)) {
+
+-        die("Klaida: Nepavyko sukurti logotipų katalogo: " . LOGO_UPLOAD_PATH);
+
+-    }
+
+-}
+
+-if (!is_writable(LOGO_UPLOAD_PATH)) {
+
+-    die("Klaida: Logotipų katalogas (" . LOGO_UPLOAD_PATH . ") nėra įrašomas (writable). Patikrinkite teises.");
+
+-}
+
+-
+
+-try {
+
+-    $db = new Database();
+
+-} catch (Exception $e) {
+
+-    error_log($e->getMessage());
+
+-    die("Atsiprašome, įvyko sisteminė klaida. Bandykite vėliau.");
+
+-}
+
+-
+
+-$auth = new Auth($db);
+
+-$companyManager = new Company($db);
+
+-
+
+-$view_data = [];
+
+-$view_template = 'home.php';
+
+-
+
+-$page = $_GET['page'] ?? 'home';
+
+-$action = $_GET['action'] ?? null;
+
+-$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
+
+-
+
+-
+
+-switch ($page) {
+
+-    case 'home':
+
+-        $view_data['isLoggedIn'] = $auth->isLoggedIn();
+
+-        $view_data['username'] = $auth->getCurrentUsername();
+
+-        $view_template = 'home.php';
+
+-        break;
+
+-
+
+-    case 'register':
+
+-        if ($auth->isLoggedIn()) redirect('home');
+
+-        $view_data['form_values'] = ['username' => '', 'email' => ''];
+
+-        $view_data['errors'] = [];
+
+-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-            $view_data['form_values']['username'] = $_POST['username'] ?? '';
+
+-            $view_data['form_values']['email'] = $_POST['email'] ?? '';
+
+-            $password = $_POST['password'] ?? '';
+
+-            $confirmPassword = $_POST['confirm_password'] ?? '';
+
+-
+
+-            $result = $auth->registerUser($view_data['form_values']['username'], $view_data['form_values']['email'], $password, $confirmPassword);
+
+-            if ($result['success']) {
+
+-                set_flash_message('success_message', $result['message']);
+
+-                redirect('login');
+
+-            } else {
+
+-                $view_data['errors'] = $result['errors'];
+
+-            }
+
+-        }
+
+-        $view_template = 'auth/register_form.php';
+
+-        break;
+
+-
+
+-    case 'login':
+
+-        if ($auth->isLoggedIn()) redirect('home');
+
+-        $view_data['form_values'] = ['username_or_email' => ''];
+
+-        $view_data['errors'] = [];
+
+-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-            $view_data['form_values']['username_or_email'] = $_POST['username_or_email'] ?? '';
+
+-            $password = $_POST['password'] ?? '';
+
+-            if ($auth->login($view_data['form_values']['username_or_email'], $password)) {
+
+-                set_flash_message('success_message', 'Sėkmingai prisijungėte!');
+
+-                if ($auth->isAdmin()) {
+
+-                    redirect('companies');
+
+-                } else {
+
+-                    redirect('home');
+
+-                }
+
+-            } else {
+
+-                $view_data['errors']['general'] = 'Neteisingas vartotojo vardas/el.paštas arba slaptažodis.';
+
+-                $view_data['errors']['credentials'] = 'Patikrinkite įvestus duomenis.';
+
+-            }
+
+-        }
+
+-        $view_template = 'auth/login_form.php';
+
+-        break;
+
+-
+
+-    case 'logout':
+
+-        $auth->logout();
+
+-        set_flash_message('success_message', 'Sėkmingai atsijungėte.');
+
+-        redirect('login');
+
+-        break;
+
+-
+
+-    case 'companies':
+
+-        switch ($action) {
+
+-            case 'create':
+
+-                // Leidžiame visiems kurti įmones, todėl administratoriaus patikrinimas pašalinamas.
+
+-                // $auth->requireAdmin('index.php?page=companies', 'index.php?page=login');
+
+-                $view_data['errors'] = [];
+
+-                $view_data['company'] = null;
+
+-
+
+-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-                    $company_data = $_POST;
+
+-                    $company_data['logotipas_filename'] = null; // Numatytasis, jei nieko neįkelta
+
+-
+
+-                    if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
+
+-                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
+
+-                    } else {
+
+-                        // Patikriname, ar įmonė su tokiu kodu jau egzistuoja
+
+-                        if ($companyManager->findCompanyByCode($company_data['imones_kodas'])) {
+
+-                            $view_data['errors']['imones_kodas'] = 'Įmonė su tokiu įmonės kodu jau egzistuoja.';
+
+-                        }
+
+-                    }
+
+-
+
+-                    // Jei nėra klaidų dėl įmonės kodo, tvarkome logotipo įkėlimą
+
+-                    if (!isset($view_data['errors']['imones_kodas']) && isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
+
+-                        $upload_result = handle_logo_upload($_FILES['logotipas']);
+
+-                        if ($upload_result['success']) {
+
+-                            $company_data['logotipas_filename'] = $upload_result['filename'];
+
+-                        } else {
+
+-                            $view_data['errors']['logotipas'] = $upload_result['error'];
+
+-                        }
+
+-                    }
+
+-
+
+-                    // Tikriname visas klaidas prieš bandant kurti
+
+-                    if (empty($view_data['errors'])) { // Patikriname, ar $view_data['errors'] masyvas tuščias
+
+-                        if ($companyManager->createCompany($company_data)) {
+
+-                            set_flash_message('success_message', 'Įmonė sėkmingai pridėta.');
+
+-                            redirect('companies');
+
+-                        } else {
+
+-                            $view_data['errors']['general'] = 'Klaida pridedant įmonę. Patikrinkite duomenis arba serverio logus.';
+
+-                        }
+
+-                    }
+
+-                    foreach ($company_data as $key => $value) { // Išsaugome formos duomenis po klaidos
+
+-                        if (!is_array($value)) {
+
+-                            $view_data['company'][$key] = $value;
+
+-                        }
+
+-                    }
+
+-                }
+
+-                $view_template = 'companies/form.php';
+
+-                break;
+
+-
+
+-            case 'edit':
+
+-                $auth->requireAdmin('companies', 'login');
+
+-                if (!$id) redirect('companies');
+
+-
+
+-                $company = $companyManager->getCompanyById($id);
+
+-                if (!$company) {
+
+-                    set_flash_message('error_message', 'Įmonė nerasta.');
+
+-                    redirect('companies');
+
+-                }
+
+-                $view_data['company'] = $company; // Perduodame esamus duomenis į formą
+
+-                $view_data['errors'] = [];
+
+-
+
+-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-                    $company_data = $_POST;
+
+-                    $current_logo_db_filename = $company['logotipas']; // Iš DB gautas failo vardas
+
+-
+
+-                    $company_data['logotipas_filename'] = $current_logo_db_filename; // Priskiriame seną pagal nutylėjimą
+
+-
+
+-                    if (isset($_POST['remove_logo']) && $_POST['remove_logo'] == '1') {
+
+-                        if ($current_logo_db_filename && file_exists(LOGO_UPLOAD_PATH . $current_logo_db_filename)) {
+
+-                            @unlink(LOGO_UPLOAD_PATH . $current_logo_db_filename);
+
+-                        }
+
+-                        $company_data['logotipas_filename'] = null; // Nustatome null, kad DB būtų atnaujinta
+
+-                    } elseif (isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
+
+-                        // Įkeliamas naujas, senas bus ištrintas handle_logo_upload viduje, jei sėkmingai
+
+-                        $upload_result = handle_logo_upload($_FILES['logotipas'], $current_logo_db_filename);
+
+-                        if (!$upload_result['success']) {
+
+-                            $view_data['errors']['logotipas'] = $upload_result['error'];
+
+-                            // Jei įkėlimas nepavyko, logotipas_filename lieka senas ($current_logo_db_filename),
+
+-                            // nes $company_data['logotipas_filename'] buvo priskirtas $current_logo_db_filename anksčiau.
+
+-                        } else {
+
+-                            $company_data['logotipas_filename'] = $upload_result['filename']; // Sėkmingai įkeltas naujas arba senas, jei nebuvo įkelta
+
+-                        }
+
+-                    }
+
+-
+
+-                    if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
+
+-                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
+
+-                    }
+
+-
+
+-                    if (!isset($view_data['errors']['logotipas']) && empty($view_data['errors']['general'])) {
+
+-                        if ($companyManager->updateCompany($id, $company_data)) {
+
+-                            set_flash_message('success_message', 'Įmonės duomenys sėkmingai atnaujinti.');
+
+-                            redirect('companies', 'view', $id);
+
+-                        } else {
+
+-                            $view_data['errors']['general'] = 'Klaida atnaujinant įmonės duomenis. Patikrinkite serverio logus.';
+
+-                        }
+
+-                    }
+
+-                    // Atnaujiname $view_data['company'] su POST reikšmėmis, kad forma būtų užpildyta po klaidos
+
+-                    foreach ($company_data as $key => $value) {
+
+-                        if (!is_array($value) && array_key_exists($key, $view_data['company'])) {
+
+-                            $view_data['company'][$key] = $value;
+
+-                        }
+
+-                    }
+
+-                    // Atnaujiname logotipo failo vardą $view_data, jei jis pasikeitė
+
+-                    $view_data['company']['logotipas'] = $company_data['logotipas_filename'];
+
+-                }
+
+-                $view_template = 'companies/form.php';
+
+-                break;
+
+-
+
+-            case 'delete':
+
+-                $auth->requireAdmin('companies', 'login');
+
+-                if (!$id) redirect('companies');
+
+-                $company = $companyManager->getCompanyById($id);
+
+-                if (!$company) {
+
+-                    set_flash_message('error_message', 'Įmonė nerasta norint ištrinti.');
+
+-                    redirect('companies');
+
+-                }
+
+-                $view_data['company'] = $company;
+
+-                $view_template = 'companies/delete_confirm.php';
+
+-                break;
+
+-
+
+-            case 'delete_submit':
+
+-                $auth->requireAdmin('companies');
+
+-                if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id && isset($_POST['confirm_delete'])) {
+
+-                    if ($companyManager->deleteCompany($id)) {
+
+-                        set_flash_message('success_message', 'Įmonė sėkmingai ištrinta.');
+
+-                    } else {
+
+-                        set_flash_message('error_message', 'Nepavyko ištrinti įmonės.');
+
+-                    }
+
+-                } else {
+
+-                    set_flash_message('error_message', 'Neteisinga užklausa trynimui.');
+
+-                }
+
+-                redirect('companies');
+
+-                break;
+
+-
+
+-            case 'view':
+
+-                if (!$id) redirect('companies');
+
+-                $company = $companyManager->getCompanyById($id);
+
+-                if (!$company) {
+
+-                    set_flash_message('error_message', 'Įmonė nerasta.');
+
+-                    redirect('companies');
+
+-                }
+
+-                $view_data['company'] = $company;
+
+-                $view_template = 'companies/view.php';
+
+-                break;
+
+-
+
+-            case 'import':
+
+-                $auth->requireAdmin('companies', 'login');
+
+-                $view_data['errors'] = [];
+
+-                $view_data['import_results'] = null;
+
+-
+
+-                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-                    // --- PRADINIS DEBUG PATIKRINIMAS ---
+
+-                    // Atkomentuokite šias eilutes, kad pamatytumėte, kas gaunama pateikus formą:
+
+-                    // echo "POST request received for import.<br>";
+
+-                    // echo "POST data: <pre>" . htmlspecialchars(print_r($_POST, true)) . "</pre>";
+
+-                    // echo "FILES data: <pre>" . htmlspecialchars(print_r($_FILES, true)) . "</pre>";
+
+-                    // die("Debug stop."); // Sustabdo vykdymą čia
+
+-                    // --- PABAIGA DEBUG PATIKRINIMO ---
+
+-
+
+-                    if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
+
+-                        $file_tmp_path = $_FILES['csv_file']['tmp_name'];
+
+-                        $file_name = $_FILES['csv_file']['name'];
+
+-                        $file_size = $_FILES['csv_file']['size'];
+
+-                        $file_type = $_FILES['csv_file']['type']; // Naršyklės pateiktas tipas
+
+-                        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
+
+-
+
+-                        $allowed_extension = 'csv';
+
+-                        $max_file_size = 5 * 1024 * 1024; // 5MB
+
+-
+
+-                        if ($file_extension !== $allowed_extension) {
+
+-                            $view_data['errors']['general'] = 'Netinkamas failo formatas. Prašome įkelti .csv failą.';
+
+-                        } elseif ($file_size > $max_file_size) {
+
+-                            $view_data['errors']['general'] = 'Failas per didelis. Maksimalus dydis 5MB.';
+
+-                        } else {
+
+-                            // Bandoma atidaryti ir nuskaityti CSV failą
+
+-                            if (($handle = fopen($file_tmp_path, "r")) !== FALSE) {
+
+-                                $header = fgetcsv($handle, 0, ","); // Nuskaitome antraštę
+
+-                                // Tikėtini antraščių pavadinimai (raktas) ir DB stulpelių pavadinimai (reikšmė)
+
+-                                $expected_headers_map = [
+
+-                                    'Pavadinimas' => 'pavadinimas',
+
+-                                    'ImonesKodas' => 'imones_kodas',
+
+-                                    'PVMKodas' => 'pvm_kodas',
+
+-                                    'VadovasVardasPavarde' => 'vadovas_vardas_pavarde',
+
+-                                    'Tinklalapis' => 'tinklalapis',
+
+-                                    'DarboLaikas' => 'darbo_laikas',
+
+-                                    'AdresasSalis' => 'adresas_salis',
+
+-                                    'AdresasMiestas' => 'adresas_miestas',
+
+-                                    'AdresasGatve' => 'adresas_gatve',
+
+-                                    'AdresasPastoKodas' => 'adresas_pasto_kodas',
+
+-                                    'Telefonas' => 'telefonas',
+
+-                                    'ElPastas' => 'el_pastas',
+
+-                                    'KontaktinisAsmuo' => 'kontaktinis_asmuo',
+
+-                                    'BankoPavadinimas' => 'banko_pavadinimas',
+
+-                                    'BankoSaskaita' => 'banko_saskaita',
+
+-                                    'Pastabos' => 'pastabos'
+
+-                                ];
+
+-                                // Patikriname, ar antraštė atitinka lūkesčius (bent jau pagrindiniai laukai)
+
+-                                if (!$header || !in_array('Pavadinimas', $header) || !in_array('ImonesKodas', $header)) {
+
+-                                    $view_data['errors']['general'] = 'CSV failo antraštė neteisinga arba trūksta būtinų stulpelių (Pavadinimas, ImonesKodas).';
+
+-                                } else {
+
+-                                    $import_stats = ['success_count' => 0, 'error_count' => 0, 'error_details' => []];
+
+-                                    $row_number = 1; // Antraštė buvo 1-a eilutė
+
+-
+
+-                                    while (($data_row = fgetcsv($handle, 0, ",")) !== FALSE) {
+
+-                                        $row_number++;
+
+-                                        $company_data_to_insert = [];
+
+-                                        // Suformuojame masyvą pagal $expected_headers_map
+
+-                                        foreach ($header as $index => $col_name) {
+
+-                                            if (isset($expected_headers_map[$col_name]) && isset($data_row[$index])) {
+
+-                                                $company_data_to_insert[$expected_headers_map[$col_name]] = trim($data_row[$index]);
+
+-                                            }
+
+-                                        }
+
+-
+
+-                                        if (empty($company_data_to_insert['pavadinimas']) || empty($company_data_to_insert['imones_kodas'])) {
+
+-                                            $import_stats['error_count']++;
+
+-                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Trūksta pavadinimo arba įmonės kodo.', 'data' => $data_row];
+
+-                                            continue;
+
+-                                        }
+
+-
+
+-                                        if ($companyManager->createCompany($company_data_to_insert)) {
+
+-                                            $import_stats['success_count']++;
+
+-                                        } else {
+
+-                                            $import_stats['error_count']++;
+
+-                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Nepavyko įrašyti į DB.', 'data' => $data_row];
+
+-                                        }
+
+-                                    }
+
+-                                    fclose($handle);
+
+-                                    $view_data['import_results'] = $import_stats;
+
+-                                }
+
+-                            } else {
+
+-                                $view_data['errors']['general'] = 'Nepavyko nuskaityti CSV failo.';
+
+-                            }
+
+-                        }
+
+-                    } elseif (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+
+-                        $view_data['errors']['general'] = 'Klaida įkeliant failą. Klaidos kodas: ' . $_FILES['csv_file']['error'];
+
+-                    } else {
+
+-                        // Jei POST, bet failo nėra, tai klaida, nebent tai pirmas puslapio užkrovimas (GET)
+
+-                        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+-                            $view_data['errors']['general'] = 'Prašome pasirinkti CSV failą.';
+
+-                        }
+
+-                    }
+
+-                }
+
+-                $view_template = 'companies/import_form.php';
+
+-                break;
+
+-
+
+-            default:
+
+-                $search_query = $_GET['search_query'] ?? null;
+
+-                $view_data['companies'] = $companyManager->getAllCompanies($search_query);
+
+-                if ($search_query) {
+
+-                    $view_data['search_query_active'] = $search_query; // Perduodame paieškos terminą į šabloną
+
+-                }
+
+-                $view_template = 'companies/index.php';
+
+-                break;
+
+-        }
+
+-        break;
+
+-
+
+-    default:
+
+-        http_response_code(404);
+
+-        $view_data['error_code'] = 404;
+
+-        $view_data['error_message'] = "Atsiprašome, ieškomas puslapis nerastas.";
+
+-        redirect('home');
+
+-        break;
+
+-}
+
+-
+
+-$view_data['auth'] = $auth;
+
+-
+
+-include __DIR__ . '/../templates/layout/header.php';
+
+-include __DIR__ . '/../templates/' . $view_template;
+
+-include __DIR__ . '/../templates/layout/footer.php';
+
++<?php
++
++// public/index.php
++
++declare(strict_types=1);
++
++
++
++session_start();
++
++
++
++require_once __DIR__ . '/../config/database.php';
++
++require_once __DIR__ . '/../src/helpers.php';
++
++require_once __DIR__ . '/../src/classes/Database.php';
++
++require_once __DIR__ . '/../src/classes/Auth.php';
++
++require_once __DIR__ . '/../src/classes/Company.php';
++
++
++
++ini_set('display_errors', "1");
++
++ini_set('display_startup_errors', "1");
++
++error_reporting(E_ALL);
++
++
++
++define('LOGO_UPLOAD_DIR_PUBLIC', 'uploads/logos/');
++
++define('LOGO_UPLOAD_PATH', __DIR__ . '/uploads/logos/');
++
++
++
++if (!is_dir(LOGO_UPLOAD_PATH)) {
++
++    if (!mkdir(LOGO_UPLOAD_PATH, 0775, true)) {
++
++        die("Klaida: Nepavyko sukurti logotipų katalogo: " . LOGO_UPLOAD_PATH);
++
++    }
++
++}
++
++if (!is_writable(LOGO_UPLOAD_PATH)) {
++
++    die("Klaida: Logotipų katalogas (" . LOGO_UPLOAD_PATH . ") nėra įrašomas (writable). Patikrinkite teises.");
++
++}
++
++
++
++try {
++
++    $db = new Database();
++
++} catch (Exception $e) {
++
++    error_log($e->getMessage());
++
++    die("Atsiprašome, įvyko sisteminė klaida. Bandykite vėliau.");
++
++}
++
++
++
++$auth = new Auth($db);
++
++$companyManager = new Company($db);
++
++
++
++$view_data = [];
++
++$view_template = 'home.php';
++
++
++
++$page = $_GET['page'] ?? 'home';
++
++$action = $_GET['action'] ?? null;
++
++$id = isset($_GET['id']) ? (int)$_GET['id'] : null;
++
++
++
++
++
++switch ($page) {
++
++    case 'home':
++
++        $view_data['isLoggedIn'] = $auth->isLoggedIn();
++
++        $view_data['username'] = $auth->getCurrentUsername();
++
++        $view_template = 'home.php';
++
++        break;
++
++
++
++    case 'register':
++
++        if ($auth->isLoggedIn()) {
++            redirect('home');
++        }
++
++        $view_data['form_values'] = ['username' => '', 'email' => ''];
++
++        $view_data['errors'] = [];
++
++        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++            $view_data['form_values']['username'] = $_POST['username'] ?? '';
++
++            $view_data['form_values']['email'] = $_POST['email'] ?? '';
++
++            $password = $_POST['password'] ?? '';
++
++            $confirmPassword = $_POST['confirm_password'] ?? '';
++
++
++
++            $result = $auth->registerUser($view_data['form_values']['username'], $view_data['form_values']['email'], $password, $confirmPassword);
++
++            if ($result['success']) {
++
++                set_flash_message('success_message', $result['message']);
++
++                redirect('login');
++
++            } else {
++
++                $view_data['errors'] = $result['errors'];
++
++            }
++
++        }
++
++        $view_template = 'auth/register_form.php';
++
++        break;
++
++
++
++    case 'login':
++
++        if ($auth->isLoggedIn()) {
++            redirect('home');
++        }
++
++        $view_data['form_values'] = ['username_or_email' => ''];
++
++        $view_data['errors'] = [];
++
++        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++            $view_data['form_values']['username_or_email'] = $_POST['username_or_email'] ?? '';
++
++            $password = $_POST['password'] ?? '';
++
++            if ($auth->login($view_data['form_values']['username_or_email'], $password)) {
++
++                set_flash_message('success_message', 'Sėkmingai prisijungėte!');
++
++                if ($auth->isAdmin()) {
++
++                    redirect('companies');
++
++                } else {
++
++                    redirect('home');
++
++                }
++
++            } else {
++
++                $view_data['errors']['general'] = 'Neteisingas vartotojo vardas/el.paštas arba slaptažodis.';
++
++                $view_data['errors']['credentials'] = 'Patikrinkite įvestus duomenis.';
++
++            }
++
++        }
++
++        $view_template = 'auth/login_form.php';
++
++        break;
++
++
++
++    case 'logout':
++
++        $auth->logout();
++
++        set_flash_message('success_message', 'Sėkmingai atsijungėte.');
++
++        redirect('login');
++
++        break;
++
++
++
++    case 'companies':
++
++        switch ($action) {
++
++            case 'create':
++
++                // Leidžiame visiems kurti įmones, todėl administratoriaus patikrinimas pašalinamas.
++
++                // $auth->requireAdmin('index.php?page=companies', 'index.php?page=login');
++
++                $view_data['errors'] = [];
++
++                $view_data['company'] = null;
++
++
++
++                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++                    $company_data = $_POST;
++
++                    $company_data['logotipas_filename'] = null; // Numatytasis, jei nieko neįkelta
++
++
++
++                    if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
++
++                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
++
++                    } else {
++
++                        // Patikriname, ar įmonė su tokiu kodu jau egzistuoja
++
++                        if ($companyManager->findCompanyByCode($company_data['imones_kodas'])) {
++
++                            $view_data['errors']['imones_kodas'] = 'Įmonė su tokiu įmonės kodu jau egzistuoja.';
++
++                        }
++
++                    }
++
++
++
++                    // Jei nėra klaidų dėl įmonės kodo, tvarkome logotipo įkėlimą
++
++                    if (!isset($view_data['errors']['imones_kodas']) && isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
++
++                        $upload_result = handle_logo_upload($_FILES['logotipas']);
++
++                        if ($upload_result['success']) {
++
++                            $company_data['logotipas_filename'] = $upload_result['filename'];
++
++                        } else {
++
++                            $view_data['errors']['logotipas'] = $upload_result['error'];
++
++                        }
++
++                    }
++
++
++
++                    // Tikriname visas klaidas prieš bandant kurti
++
++                    if (empty($view_data['errors'])) { // Patikriname, ar $view_data['errors'] masyvas tuščias
++
++                        if ($companyManager->createCompany($company_data)) {
++
++                            set_flash_message('success_message', 'Įmonė sėkmingai pridėta.');
++
++                            redirect('companies');
++
++                        } else {
++
++                            $view_data['errors']['general'] = 'Klaida pridedant įmonę. Patikrinkite duomenis arba serverio logus.';
++
++                        }
++
++                    }
++
++                    foreach ($company_data as $key => $value) { // Išsaugome formos duomenis po klaidos
++
++                        if (!is_array($value)) {
++
++                            $view_data['company'][$key] = $value;
++
++                        }
++
++                    }
++
++                }
++
++                $view_template = 'companies/form.php';
++
++                break;
++
++
++
++            case 'edit':
++
++                $auth->requireAdmin('companies', 'login');
++
++                if (!$id) {
++                    redirect('companies');
++                }
++
++
++
++                $company = $companyManager->getCompanyById($id);
++
++                if (!$company) {
++
++                    set_flash_message('error_message', 'Įmonė nerasta.');
++
++                    redirect('companies');
++
++                }
++
++                $view_data['company'] = $company; // Perduodame esamus duomenis į formą
++
++                $view_data['errors'] = [];
++
++
++
++                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++                    $company_data = $_POST;
++
++                    $current_logo_db_filename = $company['logotipas']; // Iš DB gautas failo vardas
++
++
++
++                    $company_data['logotipas_filename'] = $current_logo_db_filename; // Priskiriame seną pagal nutylėjimą
++
++
++
++                    if (isset($_POST['remove_logo']) && $_POST['remove_logo'] == '1') {
++
++                        if ($current_logo_db_filename && file_exists(LOGO_UPLOAD_PATH . $current_logo_db_filename)) {
++
++                            @unlink(LOGO_UPLOAD_PATH . $current_logo_db_filename);
++
++                        }
++
++                        $company_data['logotipas_filename'] = null; // Nustatome null, kad DB būtų atnaujinta
++
++                    } elseif (isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
++
++                        // Įkeliamas naujas, senas bus ištrintas handle_logo_upload viduje, jei sėkmingai
++
++                        $upload_result = handle_logo_upload($_FILES['logotipas'], $current_logo_db_filename);
++
++                        if (!$upload_result['success']) {
++
++                            $view_data['errors']['logotipas'] = $upload_result['error'];
++
++                            // Jei įkėlimas nepavyko, logotipas_filename lieka senas ($current_logo_db_filename),
++
++                            // nes $company_data['logotipas_filename'] buvo priskirtas $current_logo_db_filename anksčiau.
++
++                        } else {
++
++                            $company_data['logotipas_filename'] = $upload_result['filename']; // Sėkmingai įkeltas naujas arba senas, jei nebuvo įkelta
++
++                        }
++
++                    }
++
++
++
++                    if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
++
++                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
++
++                    }
++
++
++
++                    if (!isset($view_data['errors']['logotipas']) && empty($view_data['errors']['general'])) {
++
++                        if ($companyManager->updateCompany($id, $company_data)) {
++
++                            set_flash_message('success_message', 'Įmonės duomenys sėkmingai atnaujinti.');
++
++                            redirect('companies', 'view', $id);
++
++                        } else {
++
++                            $view_data['errors']['general'] = 'Klaida atnaujinant įmonės duomenis. Patikrinkite serverio logus.';
++
++                        }
++
++                    }
++
++                    // Atnaujiname $view_data['company'] su POST reikšmėmis, kad forma būtų užpildyta po klaidos
++
++                    foreach ($company_data as $key => $value) {
++
++                        if (!is_array($value) && array_key_exists($key, $view_data['company'])) {
++
++                            $view_data['company'][$key] = $value;
++
++                        }
++
++                    }
++
++                    // Atnaujiname logotipo failo vardą $view_data, jei jis pasikeitė
++
++                    $view_data['company']['logotipas'] = $company_data['logotipas_filename'];
++
++                }
++
++                $view_template = 'companies/form.php';
++
++                break;
++
++
++
++            case 'delete':
++
++                $auth->requireAdmin('companies', 'login');
++
++                if (!$id) {
++                    redirect('companies');
++                }
++
++                $company = $companyManager->getCompanyById($id);
++
++                if (!$company) {
++
++                    set_flash_message('error_message', 'Įmonė nerasta norint ištrinti.');
++
++                    redirect('companies');
++
++                }
++
++                $view_data['company'] = $company;
++
++                $view_template = 'companies/delete_confirm.php';
++
++                break;
++
++
++
++            case 'delete_submit':
++
++                $auth->requireAdmin('companies');
++
++                if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id && isset($_POST['confirm_delete'])) {
++
++                    if ($companyManager->deleteCompany($id)) {
++
++                        set_flash_message('success_message', 'Įmonė sėkmingai ištrinta.');
++
++                    } else {
++
++                        set_flash_message('error_message', 'Nepavyko ištrinti įmonės.');
++
++                    }
++
++                } else {
++
++                    set_flash_message('error_message', 'Neteisinga užklausa trynimui.');
++
++                }
++
++                redirect('companies');
++
++                break;
++
++
++
++            case 'view':
++
++                if (!$id) {
++                    redirect('companies');
++                }
++
++                $company = $companyManager->getCompanyById($id);
++
++                if (!$company) {
++
++                    set_flash_message('error_message', 'Įmonė nerasta.');
++
++                    redirect('companies');
++
++                }
++
++                $view_data['company'] = $company;
++
++                $view_template = 'companies/view.php';
++
++                break;
++
++
++
++            case 'import':
++
++                $auth->requireAdmin('companies', 'login');
++
++                $view_data['errors'] = [];
++
++                $view_data['import_results'] = null;
++
++
++
++                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++                    // --- PRADINIS DEBUG PATIKRINIMAS ---
++
++                    // Atkomentuokite šias eilutes, kad pamatytumėte, kas gaunama pateikus formą:
++
++                    // echo "POST request received for import.<br>";
++
++                    // echo "POST data: <pre>" . htmlspecialchars(print_r($_POST, true)) . "</pre>";
++
++                    // echo "FILES data: <pre>" . htmlspecialchars(print_r($_FILES, true)) . "</pre>";
++
++                    // die("Debug stop."); // Sustabdo vykdymą čia
++
++                    // --- PABAIGA DEBUG PATIKRINIMO ---
++
++
++
++                    if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] === UPLOAD_ERR_OK) {
++
++                        $file_tmp_path = $_FILES['csv_file']['tmp_name'];
++
++                        $file_name = $_FILES['csv_file']['name'];
++
++                        $file_size = $_FILES['csv_file']['size'];
++
++                        $file_type = $_FILES['csv_file']['type']; // Naršyklės pateiktas tipas
++
++                        $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
++
++
++
++                        $allowed_extension = 'csv';
++
++                        $max_file_size = 5 * 1024 * 1024; // 5MB
++
++
++
++                        if ($file_extension !== $allowed_extension) {
++
++                            $view_data['errors']['general'] = 'Netinkamas failo formatas. Prašome įkelti .csv failą.';
++
++                        } elseif ($file_size > $max_file_size) {
++
++                            $view_data['errors']['general'] = 'Failas per didelis. Maksimalus dydis 5MB.';
++
++                        } else {
++
++                            // Bandoma atidaryti ir nuskaityti CSV failą
++
++                            if (($handle = fopen($file_tmp_path, "r")) !== false) {
++
++                                $header = fgetcsv($handle, 0, ","); // Nuskaitome antraštę
++
++                                // Tikėtini antraščių pavadinimai (raktas) ir DB stulpelių pavadinimai (reikšmė)
++
++                                $expected_headers_map = [
++
++                                    'Pavadinimas' => 'pavadinimas',
++
++                                    'ImonesKodas' => 'imones_kodas',
++
++                                    'PVMKodas' => 'pvm_kodas',
++
++                                    'VadovasVardasPavarde' => 'vadovas_vardas_pavarde',
++
++                                    'Tinklalapis' => 'tinklalapis',
++
++                                    'DarboLaikas' => 'darbo_laikas',
++
++                                    'AdresasSalis' => 'adresas_salis',
++
++                                    'AdresasMiestas' => 'adresas_miestas',
++
++                                    'AdresasGatve' => 'adresas_gatve',
++
++                                    'AdresasPastoKodas' => 'adresas_pasto_kodas',
++
++                                    'Telefonas' => 'telefonas',
++
++                                    'ElPastas' => 'el_pastas',
++
++                                    'KontaktinisAsmuo' => 'kontaktinis_asmuo',
++
++                                    'BankoPavadinimas' => 'banko_pavadinimas',
++
++                                    'BankoSaskaita' => 'banko_saskaita',
++
++                                    'Pastabos' => 'pastabos'
++
++                                ];
++
++                                // Patikriname, ar antraštė atitinka lūkesčius (bent jau pagrindiniai laukai)
++
++                                if (!$header || !in_array('Pavadinimas', $header, true) || !in_array('ImonesKodas', $header, true)) {
++
++                                    $view_data['errors']['general'] = 'CSV failo antraštė neteisinga arba trūksta būtinų stulpelių (Pavadinimas, ImonesKodas).';
++
++                                } else {
++
++                                    $import_stats = ['success_count' => 0, 'error_count' => 0, 'error_details' => []];
++
++                                    $row_number = 1; // Antraštė buvo 1-a eilutė
++
++
++
++                                    while (($data_row = fgetcsv($handle, 0, ",")) !== false) {
++
++                                        $row_number++;
++
++                                        $company_data_to_insert = [];
++
++                                        // Suformuojame masyvą pagal $expected_headers_map
++
++                                        foreach ($header as $index => $col_name) {
++
++                                            if (isset($expected_headers_map[$col_name]) && isset($data_row[$index])) {
++
++                                                $company_data_to_insert[$expected_headers_map[$col_name]] = trim($data_row[$index]);
++
++                                            }
++
++                                        }
++
++
++
++                                        if (empty($company_data_to_insert['pavadinimas']) || empty($company_data_to_insert['imones_kodas'])) {
++
++                                            $import_stats['error_count']++;
++
++                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Trūksta pavadinimo arba įmonės kodo.', 'data' => $data_row];
++
++                                            continue;
++
++                                        }
++
++
++
++                                        if ($companyManager->createCompany($company_data_to_insert)) {
++
++                                            $import_stats['success_count']++;
++
++                                        } else {
++
++                                            $import_stats['error_count']++;
++
++                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Nepavyko įrašyti į DB.', 'data' => $data_row];
++
++                                        }
++
++                                    }
++
++                                    fclose($handle);
++
++                                    $view_data['import_results'] = $import_stats;
++
++                                }
++
++                            } else {
++
++                                $view_data['errors']['general'] = 'Nepavyko nuskaityti CSV failo.';
++
++                            }
++
++                        }
++
++                    } elseif (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] !== UPLOAD_ERR_NO_FILE) {
++
++                        $view_data['errors']['general'] = 'Klaida įkeliant failą. Klaidos kodas: ' . $_FILES['csv_file']['error'];
++
++                    } else {
++
++                        // Jei POST, bet failo nėra, tai klaida, nebent tai pirmas puslapio užkrovimas (GET)
++
++                        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
++
++                            $view_data['errors']['general'] = 'Prašome pasirinkti CSV failą.';
++
++                        }
++
++                    }
++
++                }
++
++                $view_template = 'companies/import_form.php';
++
++                break;
++
++
++
++            default:
++
++                $search_query = $_GET['search_query'] ?? null;
++
++                $view_data['companies'] = $companyManager->getAllCompanies($search_query);
++
++                if ($search_query) {
++
++                    $view_data['search_query_active'] = $search_query; // Perduodame paieškos terminą į šabloną
++
++                }
++
++                $view_template = 'companies/index.php';
++
++                break;
++
++        }
++
++        break;
++
++
++
++    default:
++
++        http_response_code(404);
++
++        $view_data['error_code'] = 404;
++
++        $view_data['error_message'] = "Atsiprašome, ieškomas puslapis nerastas.";
++
++        redirect('home');
++
++        break;
++
++}
++
++
++
++$view_data['auth'] = $auth;
++
++
++
++include __DIR__ . '/../templates/layout/header.php';
++
++include __DIR__ . '/../templates/' . $view_template;
++
++include __DIR__ . '/../templates/layout/footer.php';
+
+      ----------- end diff -----------
+
+   6) config/database.php
+      ---------- begin diff ----------
+--- /app/config/database.php
++++ /app/config/database.php
+@@ -1,10 +1,17 @@
+-<?php
+
+-define('DB_HOST', 'localhost');
+
+-define('DB_USER', 'projektai_rekvi');
+
+-define('DB_PASS', 'TZ7sCTA8E5xUP4nwRWUf');
+
+-define('DB_NAME', 'projektai_rekvi'); // Jūsų duomenų bazės pavadinimas
+
+-
+
+-// Duomenų bazės lentelių pavadinimai (pasirinktinai, jei norite centralizuoti)
+
+-define('TABLE_USERS', 'vartotojai');
+
+-define('TABLE_COMPANIES', 'imones_rekvizitai');
+
+-?>
+\ No newline at end of file
++<?php
++
++define('DB_HOST', 'localhost');
++
++define('DB_USER', 'projektai_rekvi');
++
++define('DB_PASS', 'TZ7sCTA8E5xUP4nwRWUf');
++
++define('DB_NAME', 'projektai_rekvi'); // Jūsų duomenų bazės pavadinimas
++
++
++
++// Duomenų bazės lentelių pavadinimai (pasirinktinai, jei norite centralizuoti)
++
++define('TABLE_USERS', 'vartotojai');
++
++define('TABLE_COMPANIES', 'imones_rekvizitai');
+
+      ----------- end diff -----------
+
+
+Found 6 of 6 files that can be fixed in 0.457 seconds, 16.00 MB memory used
