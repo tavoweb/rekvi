@@ -2,11 +2,11 @@
 
 define('DB_HOST', 'localhost');
 
-define('DB_USER', '');
+define('DB_USER', 'projektai_rekvi');
 
-define('DB_PASS', '');
+define('DB_PASS', 'TZ7sCTA8E5xUP4nwRWUf');
 
-define('DB_NAME', 'i'); // Jūsų duomenų bazės pavadinimas
+define('DB_NAME', 'projektai_rekvi'); // Jūsų duomenų bazės pavadinimas
 
 
 

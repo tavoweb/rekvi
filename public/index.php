@@ -15,7 +15,7 @@ ini_set('display_errors', "1");
 ini_set('display_startup_errors', "1");
 error_reporting(E_ALL);
 
-define('LOGO_UPLOAD_DIR_PUBLIC', 'uploads/logos/');
+define('LOGO_UPLOAD_DIR_PUBLIC', '/uploads/logos/');
 define('LOGO_UPLOAD_PATH', __DIR__ . '/uploads/logos/');
 
 if (!is_dir(LOGO_UPLOAD_PATH)) {
