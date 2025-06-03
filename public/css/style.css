@@ -923,3 +923,13 @@ footer p {
 .suggestion-item:hover {
     background-color: #f5f5f5;
 }
+
+.table-responsive-wrapper {
+    overflow-x: auto;
+    width: 100%; /* Ensures the wrapper takes full available width */
+}
+
+/* Optional: Style for tables within the wrapper to ensure they don't try to shrink unnaturally */
+.table-responsive-wrapper table {
+    min-width: 100%; /* Or a specific min-width like 600px if tables have a natural minimum size */
+}
