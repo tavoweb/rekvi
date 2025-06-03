@@ -90,14 +90,14 @@ document.addEventListener('DOMContentLoaded', function () {
     const currentSearchTerm = <?php echo json_encode($search_query_active ?? null); ?>;
     // Function to generate URL (approximating the PHP url() function)
     function siteUrl(controller, action = '', id = 0) {
-        let path = `companies/route=${controller}`;
+        let path = '/' + controller; // Start with a leading slash for root-relative URLs
         if (action) {
-            path += `&action=${action}`;
+            path += '/' + action;
         }
-        if (id) {
-            path += `&id=${id}`;
+        if (id) { // Only add ID if action is also present, or handle cases based on PHP logic
+            path += '/' + id;
         }
-        return path; // Adjust this base path if your URL structure is different (e.g., using mod_rewrite)
+        return path;
     }
 
     // Function to escape HTML (approximating PHP e() function)
