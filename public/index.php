@@ -38,7 +38,6 @@ $auth = new Auth($db);
 $companyManager = new Company($db);
 $view_data['total_companies'] = $companyManager->getTotalCompaniesCount();
 
-$view_data = [];
 $view_template = 'home.php';
 
 // Initialize with defaults

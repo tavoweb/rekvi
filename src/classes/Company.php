@@ -100,13 +100,25 @@ class Company
 
     public function getTotalCompaniesCount(): int
     {
+        $sql = ""; // Initialize for logging in case of early failure
         try {
             $sql = "SELECT COUNT(*) as total FROM " . $this->companiesTable;
-            $this->db->query($sql);
-            $result = $this->db->single();
-            return (int)($result['total'] ?? 0);
-        } catch (PDOException $e) {
-            error_log("Error getting total companies count: " . $e->getMessage());
+            $this->db->query($sql); // Prepares the query
+            $result = $this->db->single(); // Executes and fetches
+
+            // Check if $result is an array and if 'total' key exists
+            if (is_array($result) && isset($result['total'])) {
+                return (int)$result['total'];
+            } else {
+                // Log this specific scenario for better debugging
+                error_log("Error getting total companies count: db->single() did not return expected array or 'total' key was missing. SQL: " . $sql . ". Result from db->single(): " . print_r($result, true));
+                return 0;
+            }
+        } catch (PDOException $e) { // Catches exceptions from query preparation (from $this->db->query())
+            error_log("PDOException in getTotalCompaniesCount: " . $e->getMessage() . " | SQL: " . $sql);
+            return 0;
+        } catch (Exception $e) { // Catch any other unexpected non-PDO errors
+            error_log("Generic Exception in getTotalCompaniesCount: " . $e->getMessage() . " | SQL: " . $sql);
             return 0;
         }
     }
