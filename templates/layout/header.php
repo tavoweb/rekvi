@@ -13,7 +13,8 @@ $currentAction = $_GET['action'] ?? '';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rekvizitų Valdymo Sistema</title>
+    <title><?php echo isset($view_data['meta_title']) ? e($view_data['meta_title']) : 'Rekvizitų Valdymo Sistema'; ?></title>
+    <meta name="description" content="<?php echo isset($view_data['meta_description']) ? e($view_data['meta_description']) : 'Patogi įmonių rekvizitų paieškos ir valdymo sistema.'; ?>">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css"> <?php // Root-relative path ensures CSS loads on all pages ?>
 </head>
