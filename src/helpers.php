@@ -1,4 +1,5 @@
 <?php
+
 // src/helpers.php
 
 /**
@@ -8,7 +9,8 @@
  * @param string|null $string Tekstas, kurį reikia apdoroti.
  * @return string Apdorotas tekstas.
  */
-function e(?string $string): string {
+function e(?string $string): string
+{
     return htmlspecialchars((string)$string, ENT_QUOTES, 'UTF-8');
 }
 
@@ -20,7 +22,8 @@ function e(?string $string): string {
  * @param int|null $id Įrašo ID (jei reikia)
  * @param array $params Papildomi parametrai
  */
-function redirect(string $page, ?string $action = null, ?int $id = null, array $params = []): void {
+function redirect(string $page, ?string $action = null, ?int $id = null, array $params = []): void
+{
     $url = url($page, $action, $id, $params);
     header("Location: " . $url);
     exit;
@@ -32,7 +35,8 @@ function redirect(string $page, ?string $action = null, ?int $id = null, array $
  * @param string $name Pranešimo pavadinimas (pvz., 'success_message', 'error_message').
  * @param string $message Pranešimo tekstas.
  */
-function set_flash_message(string $name, string $message): void {
+function set_flash_message(string $name, string $message): void
+{
     $_SESSION[$name] = $message;
 }
 
@@ -42,7 +46,8 @@ function set_flash_message(string $name, string $message): void {
  * @param string $name Pranešimo pavadinimas.
  * @return string|null Pranešimo tekstas arba null, jei nėra.
  */
-function get_flash_message(string $name): ?string {
+function get_flash_message(string $name): ?string
+{
     if (isset($_SESSION[$name])) {
         $message = $_SESSION[$name];
         unset($_SESSION[$name]);
@@ -60,9 +65,10 @@ function get_flash_message(string $name): ?string {
  * @param array $params Papildomi parametrai (pvz., ['search_query' => 'test'])
  * @return string Sugeneruota URL nuoroda
  */
-function url(string $page, ?string $action = null, ?int $id = null, array $params = []): string {
+function url(string $page, ?string $action = null, ?int $id = null, array $params = []): string
+{
     $base_url = '';
-    
+
     if ($action === null) {
         // Nuoroda į pagrindinį puslapį: /home
         $url = $base_url . '/' . $page;
@@ -73,13 +79,13 @@ function url(string $page, ?string $action = null, ?int $id = null, array $param
         // Nuoroda į veiksmą su ID: /companies/view/123
         $url = $base_url . '/' . $page . '/' . $action . '/' . $id;
     }
-    
+
     // Pridedame papildomus parametrus jei yra
     if (!empty($params)) {
         $query_string = http_build_query($params);
         $url .= '?' . $query_string;
     }
-    
+
     return $url;
 }
 
@@ -91,7 +97,8 @@ function url(string $page, ?string $action = null, ?int $id = null, array $param
  * @return array Rezultatas: ['success' => bool, 'filename' => ?string, 'error' => ?string]
  *               'filename' yra naujo failo vardas sėkmės atveju, arba $current_logo_filename jei nieko neįkelta/klaida.
  */
-function handle_logo_upload(array $file_input, ?string $current_logo_filename = null): array {
+function handle_logo_upload(array $file_input, ?string $current_logo_filename = null): array
+{
     if (isset($file_input['name']) && $file_input['error'] === UPLOAD_ERR_OK) {
         $filename = $file_input['name'];
         $temp_path = $file_input['tmp_name'];
@@ -103,7 +110,7 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
         $max_filesize = 2 * 1024 * 1024; // 2MB
 
         $actual_mime_type = mime_content_type($temp_path);
-        if (!in_array(strtolower($actual_mime_type), $allowed_mime_types)) {
+        if (!in_array(strtolower($actual_mime_type), $allowed_mime_types, true)) {
             return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo tipas. Leidžiama JPG, PNG, GIF.'];
         }
         if ($filesize > $max_filesize) {
@@ -111,10 +118,10 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
         }
 
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
-        if(!in_array($extension, $allowed_extensions)){
+        if (!in_array($extension, $allowed_extensions, true)) {
             return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo plėtinys. Leidžiama JPG, JPEG, PNG, GIF.'];
         }
-        
+
         $new_filename = uniqid('logo_', true) . '.' . $extension;
         $destination = LOGO_UPLOAD_PATH . $new_filename;
 
