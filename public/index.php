@@ -405,6 +405,17 @@ switch ($page) {
                 echo json_encode($response_data);
                 exit;
 
+            case 'search_suggestions':
+                header('Content-Type: application/json');
+                $query = $_GET['query'] ?? '';
+                if (empty($query)) {
+                    echo json_encode([]);
+                    exit;
+                }
+                $suggestions = $companyManager->searchSuggestions($query);
+                echo json_encode($suggestions);
+                exit;
+
             default:
                 $search_query = $_GET['search_query'] ?? null;
                 // Fetch page 1, limit 100 for initial company list view
