@@ -49,6 +49,7 @@ $currentAction = $_GET['action'] ?? '';
                 <li><a href="<?php echo url('companies', 'create'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'create') ? 'active' : ''; ?>">Pridėti įmonę</a></li>
                 <?php if ($auth->isAdmin()): ?>
                     <li><a href="<?php echo url('companies', 'import'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'import') ? 'active' : ''; ?>">Importuoti įmones</a></li>
+                    <li><a href="<?php echo url('admin', 'users'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'users') ? 'active' : ''; ?>">Vartotojų Sąrašas (Admin)</a></li>
                 <?php endif; ?>
             </ul>
         </nav>
