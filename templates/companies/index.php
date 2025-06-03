@@ -133,7 +133,7 @@ document.addEventListener('DOMContentLoaded', function () {
         if(loadingIndicator) loadingIndicator.style.display = 'block';
 
         // Corrected AJAX URL construction
-        let ajaxUrl = `companies/route=companies&action=load_more_companies&page=${currentPage}&ajax=1`;
+        let ajaxUrl = `companies/load_more_companies?page=${currentPage}&ajax=1`;
         if (currentSearchTerm) {
             ajaxUrl += `&search_query=${encodeURIComponent(currentSearchTerm)}`;
         }
