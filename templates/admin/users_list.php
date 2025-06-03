@@ -10,9 +10,10 @@ $users = $view_data['users'] ?? [];
     <?php if (empty($users)): ?>
         <p>Registruotų vartotojų nėra.</p>
     <?php else: ?>
-        <table class="table table-striped">
-            <thead>
-                <tr>
+        <div class="table-responsive-wrapper">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
                     <th>ID</th>
                     <th>Vartotojo Vardas</th>
                     <th>El. Paštas</th>
@@ -32,6 +33,7 @@ $users = $view_data['users'] ?? [];
                 <?php endforeach; ?>
             </tbody>
         </table>
+        </div>
     <?php endif; ?>
 
     <p><a href="<?php echo url('home'); // Or a link to an admin dashboard if one exists ?>" class="button">Grįžti į Pagrindinį</a></p>
