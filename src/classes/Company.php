@@ -26,7 +26,7 @@ class Company
 
 
 
-    public function getAllCompanies(?string $searchTerm = null): array
+    public function getAllCompanies(?string $searchTerm = null, int $page = 1, int $limit = 100): array
     {
 
         // Parenkame tik reikiamus stulpelius sąrašo rodymui, kad būtų efektyviau
@@ -59,7 +59,9 @@ class Company
 
         $sql .= " ORDER BY pavadinimas ASC"; // Rūšiuojame pagal pavadinimą
 
-
+        // Pridedame LIMIT ir OFFSET SQL užklausai
+        $offset = ($page - 1) * $limit;
+        $sql .= " LIMIT :limit OFFSET :offset";
 
         $this->db->query($sql);
 
@@ -74,6 +76,10 @@ class Company
             $this->db->bind(':searchImonesKodas', $searchTermWildcard);
 
         }
+
+        // Susiejame :limit ir :offset parametrus
+        $this->db->bind(':limit', $limit, \PDO::PARAM_INT);
+        $this->db->bind(':offset', $offset, \PDO::PARAM_INT);
 
         return $this->db->resultSet();
 
