@@ -10,6 +10,7 @@ require_once __DIR__ . '/../src/helpers.php';
 require_once __DIR__ . '/../src/classes/Database.php';
 require_once __DIR__ . '/../src/classes/Auth.php';
 require_once __DIR__ . '/../src/classes/Company.php';
+require_once __DIR__ . '/../src/classes/SitemapGenerator.php';
 
 ini_set('display_errors', "1");
 ini_set('display_startup_errors', "1");
@@ -17,6 +18,7 @@ error_reporting(E_ALL);
 
 define('LOGO_UPLOAD_DIR_PUBLIC', '/uploads/logos/');
 define('LOGO_UPLOAD_PATH', __DIR__ . '/uploads/logos/');
+define('SITE_BASE_URL', 'http://localhost'); // Base URL for the site
 
 if (!is_dir(LOGO_UPLOAD_PATH)) {
     if (!mkdir(LOGO_UPLOAD_PATH, 0775, true)) {
@@ -463,6 +465,16 @@ switch ($page) {
         $admin_action = $action ?? 'dashboard';
 
         switch ($admin_action) {
+            case 'generate_sitemap':
+                $auth->requireAdmin();
+                $sitemapGenerator = new SitemapGenerator($db, SITE_BASE_URL);
+                if ($sitemapGenerator->generate()) {
+                    set_flash_message('success_message', 'Sitemap generated successfully and saved to public/sitemap.xml.');
+                } else {
+                    set_flash_message('error_message', 'Failed to generate sitemap. Check server logs.');
+                }
+                redirect('admin', 'users');
+                break;
             case 'users':
                 $view_data['users'] = $auth->getAllUsers();
                 $view_template = 'admin/users_list.php';

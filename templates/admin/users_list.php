@@ -7,6 +7,10 @@ $users = $view_data['users'] ?? [];
 <div class="container">
     <h1>Administratoriaus Panelė - Vartotojų Sąrašas</h1>
 
+    <div style="margin-bottom: 20px;">
+        <a href="<?php echo url('admin', 'generate_sitemap'); ?>" class="button">Generuoti Sitemap.xml</a>
+    </div>
+
     <?php if (empty($users)): ?>
         <p>Registruotų vartotojų nėra.</p>
     <?php else: ?>
