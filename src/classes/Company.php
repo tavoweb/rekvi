@@ -387,6 +387,19 @@ class Company
 
     }
 
+    public function searchSuggestions(string $query): array
+    {
+        $sql = "SELECT id, pavadinimas FROM " . $this->companiesTable . " WHERE pavadinimas LIKE :query LIMIT 10";
+        try {
+            $this->db->query($sql);
+            $this->db->bind(':query', '%' . $query . '%');
+            return $this->db->resultSet();
+        } catch (PDOException $e) {
+            // Log error, but return empty array to the client
+            error_log("Error searching suggestions: " . $e->getMessage());
+            return [];
+        }
+    }
 }
 
 ?>

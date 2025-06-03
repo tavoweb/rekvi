@@ -39,8 +39,9 @@ $currentAction = $_GET['action'] ?? '';
         </div>
         <div class="sidebar-search">
             <form action="<?php echo url('companies'); ?>" method="GET">
-                <input type="text" name="search_query" placeholder="Ieškoti įmonės..." value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
+                <input type="text" name="search_query" id="search-input" placeholder="Ieškoti įmonės..." value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
             </form>
+            <div id="search-suggestions-container"></div>
         </div>
         <nav class="sidebar-nav">
             <ul>
