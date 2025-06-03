@@ -43,8 +43,8 @@ $logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC;
     <div class="field-with-icon"><span class="material-icons">schedule</span><strong>Darbo laikas:</strong><br><?php echo nl2br(e($company['darbo_laikas'])); ?></div>
     <?php endif; ?>
 
-    <h3><span class="material-icons">place</span>Adresas</h3>
-    <p>
+    <h3>Adresas</h3>
+    <p><span class="material-icons">place</span>
         <?php
         $address_parts = [];
         if (!empty($company['adresas_gatve'])) $address_parts[] = e($company['adresas_gatve']);
