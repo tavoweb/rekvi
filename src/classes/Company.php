@@ -98,6 +98,19 @@ class Company
 
     }
 
+    public function getTotalCompaniesCount(): int
+    {
+        try {
+            $sql = "SELECT COUNT(*) as total FROM " . $this->companiesTable;
+            $this->db->query($sql);
+            $result = $this->db->single();
+            return (int)($result['total'] ?? 0);
+        } catch (PDOException $e) {
+            error_log("Error getting total companies count: " . $e->getMessage());
+            return 0;
+        }
+    }
+
 
 
     /**
