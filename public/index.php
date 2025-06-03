@@ -351,9 +351,44 @@ switch ($page) {
                 $view_template = 'companies/import_form.php';
                 break;
 
+            case 'load_more_companies':
+                if (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') {
+                    // Optional: Redirect or show error if not an AJAX request
+                    // For now, just exit to prevent unexpected output.
+                    // error_log("Non-AJAX attempt to access load_more_companies");
+                    http_response_code(400); // Bad Request
+                    echo json_encode(['error' => 'Invalid request method.']);
+                    exit;
+                }
+
+                $requested_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+                if ($requested_page <= 0) {
+                    $requested_page = 1; // Default to page 1 if invalid
+                }
+
+                // Determine search query for AJAX calls.
+                // If your JS sends search_query with AJAX, use it. Otherwise, it's null.
+                // For this implementation, we'll assume search_query might be passed via GET
+                $search_query_ajax = $_GET['search_query'] ?? null;
+
+                $companies_per_page = 100; // Same as initial load and JS expectations
+                $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
+                $isAdmin = $auth->isAdmin();
+
+                header('Content-Type: application/json');
+                echo json_encode([
+                    'companies' => $companies,
+                    'isAdmin' => $isAdmin,
+                    'logos_dir_url' => LOGO_UPLOAD_DIR_PUBLIC
+                    // search_query_active could also be returned if needed by JS to display status
+                    // 'search_query_active' => $search_query_ajax
+                ]);
+                exit;
+
             default:
                 $search_query = $_GET['search_query'] ?? null;
-                $view_data['companies'] = $companyManager->getAllCompanies($search_query);
+                // Fetch page 1, limit 100 for initial company list view
+                $view_data['companies'] = $companyManager->getAllCompanies($search_query, 1, 100);
                 if ($search_query) {
                     $view_data['search_query_active'] = $search_query;
                 }

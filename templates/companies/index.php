@@ -43,7 +43,7 @@ $logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC; // Naudojame konstantą iš index.php
                     <?php endif; ?>
                 </tr>
             </thead>
-            <tbody>
+            <tbody id="companies-tbody">
                 <?php foreach ($companies as $company): ?>
                 <tr>
                     <td>
@@ -74,3 +74,120 @@ $logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC; // Naudojame konstantą iš index.php
         </table>
     </div>
 <?php endif; ?>
+
+<div id="loading-indicator" style="display: none; text-align: center; padding: 20px;">
+    <p>Kraunama daugiau įmonių...</p>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const companiesTbody = document.getElementById('companies-tbody');
+    const loadingIndicator = document.getElementById('loading-indicator');
+    let currentPage = 1;
+    let isLoading = false;
+    const isAdmin = <?php echo json_encode($isAdmin); ?>;
+    const logosDirUrl = <?php echo json_encode($logos_dir_url); ?>;
+    // Function to generate URL (approximating the PHP url() function)
+    function siteUrl(controller, action = '', id = 0) {
+        let path = `index.php?route=${controller}`;
+        if (action) {
+            path += `&action=${action}`;
+        }
+        if (id) {
+            path += `&id=${id}`;
+        }
+        return path; // Adjust this base path if your URL structure is different (e.g., using mod_rewrite)
+    }
+
+    // Function to escape HTML (approximating PHP e() function)
+    function escapeHtml(unsafe) {
+        if (unsafe === null || typeof unsafe === 'undefined') {
+            return '';
+        }
+        return unsafe
+             .toString()
+             .replace(/&/g, "&amp;")
+             .replace(/</g, "&lt;")
+             .replace(/>/g, "&gt;")
+             .replace(/"/g, "&quot;")
+             .replace(/'/g, "&#039;");
+    }
+
+    function loadMoreCompanies() {
+        if (isLoading) {
+            return;
+        }
+        isLoading = true;
+        currentPage++;
+        if(loadingIndicator) loadingIndicator.style.display = 'block';
+
+        // Corrected AJAX URL construction
+        const ajaxUrl = `index.php?route=companies&action=load_more_companies&page=${currentPage}&ajax=1`;
+
+
+        fetch(ajaxUrl)
+            .then(response => response.json())
+            .then(data => {
+                if (data.companies && data.companies.length > 0) {
+                    data.companies.forEach(company => {
+                        const tr = document.createElement('tr');
+                        let adminActionsHtml = '';
+                        if (isAdmin) {
+                            adminActionsHtml = `
+                                <a href="${siteUrl('companies', 'edit', company.id)}" class="button button-small">Redaguoti</a>
+                                <a href="${siteUrl('companies', 'delete', company.id)}" class="button button-small button-danger" onclick="return confirm('Ar tikrai norite ištrinti šią įmonę?');">Trinti</a>
+                            `;
+                        }
+
+                        const logoHtml = company.logotipas
+                            ? `<a href="${siteUrl('companies', 'view', company.id)}"><img src="${logosDirUrl + escapeHtml(company.logotipas)}" alt="${escapeHtml(company.pavadinimas)}" class="logo-thumbnail"></a>`
+                            : `<div class="logo-thumbnail-placeholder">[Nėra]</div>`;
+
+                        tr.innerHTML = `
+                            <td>${logoHtml}</td>
+                            <td><a href="${siteUrl('companies', 'view', company.id)}">${escapeHtml(company.pavadinimas)}</a></td>
+                            <td>${escapeHtml(company.imones_kodas)}</td>
+                            <td>${escapeHtml(company.pvm_kodas) || '-'}</td>
+                            ${isAdmin ? `<td>${adminActionsHtml}</td>` : ''}
+                        `;
+                        companiesTbody.appendChild(tr);
+                    });
+                } else {
+                    // No more companies to load
+                    if(loadingIndicator) loadingIndicator.innerHTML = '<p>Daugiau įmonių nerasta.</p>';
+                    window.removeEventListener('scroll', handleScroll); // Optional: remove listener
+                }
+            })
+            .catch(error => {
+                console.error('Error loading more companies:', error);
+                if(loadingIndicator) loadingIndicator.innerHTML = '<p>Klaida kraunant įmones.</p>';
+                // isLoading = false; // Moved to finally
+            })
+            .finally(() => {
+                isLoading = false;
+                // The decision to hide the indicator is now primarily within the .then() block
+                // If it's showing "No more companies" or "Error", it should remain visible.
+                // If it was loading and successful, it's hidden in .then().
+                // If it was loading and then an error, it shows the error.
+            });
+    }
+
+    function handleScroll() {
+        // Window height + scrollY >= document height - threshold
+        if ((window.innerHeight + window.scrollY) >= (document.documentElement.scrollHeight - 200)) {
+            loadMoreCompanies();
+        }
+    }
+
+    window.addEventListener('scroll', handleScroll);
+
+    // Initial check in case the content is too short to scroll
+    // Or if there are fewer than 100 companies and no scrollbar appears.
+    // However, we only want to load more if the initial set might not fill the page.
+    // This initial load logic might need refinement based on how `load_more_companies` is structured.
+    // For now, we assume the initial page (page 1) is loaded via PHP.
+    // If the initial load has less than 100 (the limit), it implies no more companies.
+    // The logic for this initial state is handled by PHP rendering the initial list.
+    // The JS scroll listener will then fetch page 2 onwards.
+});
+</script>
