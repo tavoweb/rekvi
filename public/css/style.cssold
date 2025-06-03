@@ -1,0 +1,613 @@
+/* public/css/style.css */
+/* Reset and base styles */
+* {
+    box-sizing: border-box; /* Įtraukiame box-sizing čia */
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.6;
+    color: #343a40; /* Tamsesnis tekstas geresniam kontrastui */
+    background-color: #f4f6f9; /* Labai šviesiai pilkas fonas */
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+html, body {
+    height: 100%;
+}
+img {
+    max-width: 100%;
+    height: auto;
+    display: block; /* Ensures no gaps below images */
+}
+
+a {
+    color: #007bff; /* Blue color for links */
+    text-decoration: none; /* Removes underline by default */
+}
+a:hover {
+    text-decoration: underline; /* Adds underline on hover */
+}
+
+/* General Layout */
+.page-wrapper {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 250px;
+    background-color: #ffffff; /* Baltas šoninis meniu */
+    border-right: 1px solid #dee2e6; /* Švelni riba */
+    padding: 20px 15px;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    overflow-y: auto;
+    z-index: 1030; /* Aukštesnis z-index, kad būtų virš fono užtemdymo */
+    box-shadow: 0 0 15px rgba(0,0,0,0.05); /* Subtilus šešėlis */
+    transition: left 0.3s ease-in-out; /* Pridedame transition paslėpimui/rodymui */
+}
+
+.sidebar-header {
+    padding-bottom: 15px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #e9ecef;
+    /* text-align: center; nebereikia, nes flex tvarko */
+    display: flex; /* Kad brand ir hamburger būtų vienoje eilėje */
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Sidebar Toggle Button (Hamburger) - initially hidden on large screens */
+.sidebar-toggle {
+    display: none; /* Hidden by default */
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.5rem;
+    outline: none; /* Pašalinam galimą outline, jei mygtukas fokusuotas */
+    line-height: 1; /* Išvengti papildomo aukščio */
+}
+.sidebar-toggle span {
+    display: block;
+    width: 22px;
+    height: 2px;
+    background-color: #343a40; /* Tamsi spalva mygtukui */
+    margin: 4px 0;
+    transition: all 0.3s ease-in-out;
+}
+
+.sidebar-brand-link {
+    font-size: 1.5rem; /* Sumažintas brand pavadinimas */
+    font-weight: 600; /* Šiek tiek storesnis */
+    color: #007bff; /* Mėlynas akcentas */
+    text-decoration: none;
+}
+
+.sidebar-search {
+    padding: 0 0 15px 0; /* Tarpas po paieškos laukeliu */
+    margin-bottom: 15px;
+    border-bottom: 1px solid #e9ecef;
+}
+.sidebar-search input[type="text"] {
+    width: 100%; /* Pakeista į 100% */
+    padding: 8px 12px;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    font-size: 0.9rem;
+}
+.sidebar-search input[type="text"]:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav ul li a {
+    display: block;
+    padding: 10px 15px;
+    color: #495057; /* Tamsiai pilkas tekstas nuorodoms */
+    text-decoration: none;
+    border-radius: 0.25rem; /* Užapvalinti kampai */
+    margin-bottom: 5px;
+    font-weight: 500;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.sidebar-nav ul li a:hover {
+    background-color: #e9ecef; /* Šviesiai pilkas fonas hover */
+    color: #007bff;
+}
+
+.sidebar-nav ul li a.active {
+    background-color: #007bff;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #e9ecef;
+    text-align: center;
+}
+.sidebar-footer .user-info {
+    margin-bottom: 10px;
+    font-size: 0.9em;
+}
+.sidebar-footer .user-name {
+    font-weight: 600;
+    color: #343a40;
+}
+.sidebar-footer .user-role {
+    color: #6c757d;
+    font-size: 0.85em;
+}
+.sidebar-footer .button {
+    width: 100%; /* Pakeista į 100% */
+    margin-top: 5px;
+}
+
+.main-content {
+    flex-grow: 1;
+    margin-left: 250px; /* Atitinka sidebar plotį */
+    padding: 0; /* Pašaliname padding, jį valdys .content-inner */
+    background-color: #f4f6f9; /* Fonas pagrindiniam turiniui */
+    transition: margin-left 0.3s ease-in-out; /* Pridedame transition turinio pastūmimui */
+}
+
+.content-inner {
+    padding: 25px; /* Didesnis vidinis tarpas turiniui */
+}
+
+/* Container (jei naudojamas viduje .content-inner) */
+.container {
+    width: 100%; /* Pakeista, kad containeris būtų lankstesnis viduje .content-inner */
+    max-width: 1140px; /* Paliekam max-width */
+    margin-left: auto;
+    margin-right: auto;
+    /* padding-left: 15px; padding-right: 15px; - šį valdo .content-inner */
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+    margin-top: 0;
+    margin-bottom: 0.75rem;
+    font-weight: 600;
+    color: #212529;
+}
+h1 { font-size: 2.25rem; }
+h2 { font-size: 1.75rem; margin-bottom: 1.25rem; }
+h3 { font-size: 1.5rem; }
+p { margin-bottom: 1rem; }
+
+/* Card component */
+.card {
+    background-color: #ffffff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.3rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.card-header {
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 0;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+    border-top-left-radius: calc(0.3rem - 1px);
+    border-top-right-radius: calc(0.3rem - 1px);
+}
+.card-header h2, .card-header h3 {
+    margin-bottom: 0;
+    font-size: 1.25rem;
+}
+.card-body {
+    padding: 1.25rem;
+}
+
+/* Buttons */
+.button, button {
+    display: inline-block;
+    font-weight: 400;
+    color: #212529;
+    text-align: center;
+    vertical-align: middle;
+    cursor: pointer;
+    user-select: none;
+    background-color: transparent;
+    border: 1px solid transparent;
+    padding: 0.5rem 1rem;
+    font-size: 1rem;
+    line-height: 1.5;
+    border-radius: 0.25rem;
+    transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.button-primary { color: #fff; background-color: #007bff; border-color: #007bff; }
+.button-primary:hover { color: #fff; background-color: #0069d9; border-color: #0062cc; }
+.button-secondary { color: #fff; background-color: #6c757d; border-color: #6c757d; }
+.button-secondary:hover { color: #fff; background-color: #5a6268; border-color: #545b62; }
+.button-danger { color: #fff; background-color: #dc3545; border-color: #dc3545; }
+.button-danger:hover { color: #fff; background-color: #c82333; border-color: #bd2130; }
+.button-outline { color: #007bff; border-color: #007bff; }
+.button-outline:hover { color: #fff; background-color: #007bff; }
+.button.button-small { padding: 0.25rem 0.5rem; font-size: 0.875rem; line-height: 1.5; border-radius: 0.2rem; }
+.button.full-width { display: block; width: 100%; }
+
+
+/* Forms */
+.form-group {
+    margin-bottom: 1rem;
+}
+.form-group label {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+.form-group input[type="text"],
+.form-group input[type="email"],
+.form-group input[type="password"],
+.form-group input[type="tel"],
+.form-group input[type="url"],
+.form-group input[type="file"],
+.form-group textarea,
+.form-group select {
+    display: block;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    font-weight: 400;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 0.25rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+.form-group input[type="file"] {
+    padding: 0.375rem 0.75rem;
+}
+.form-group textarea {
+    min-height: 100px;
+}
+.form-group input:focus, .form-group textarea:focus {
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+.form-error {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 0.25rem;
+}
+.form-group .is-invalid {
+    border-color: #dc3545 !important;
+}
+
+.is-invalid {
+    border-color: #dc3545 !important;
+}
+.form-actions {
+    margin-top: 1.5rem;
+}
+.form-actions .button {
+    margin-right: 10px;
+}
+fieldset {
+    border: 1px solid #dee2e6;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 0.3rem;
+}
+legend {
+    font-weight: 600;
+    padding: 0 0.5rem;
+    font-size: 1.1rem;
+    color: #495057;
+}
+
+/* Tables */
+table {
+    width: 100%;
+    margin-bottom: 1rem;
+    color: #212529;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+table th,
+table td {
+    padding: 0.75rem;
+    vertical-align: top;
+    border: 1px solid #dee2e6;
+}
+table thead th {
+    vertical-align: bottom;
+    border-bottom-width: 2px;
+    background-color: #e9ecef;
+    font-weight: 600;
+}
+table tbody + tbody {
+    border-top: 2px solid #dee2e6;
+}
+.logo-thumbnail {
+    max-width: 70px;
+    max-height: 40px;
+    object-fit: contain;
+    border: 1px solid #dee2e6;
+    padding: 2px;
+    border-radius: 3px;
+}
+.logo-thumbnail-placeholder {
+    width: 70px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8em;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 3px;
+}
+
+/* Alerts */
+.alert {
+    position: relative;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1rem;
+    border: 1px solid transparent;
+    border-radius: 0.25rem;
+}
+.alert.flash-message {
+    margin-bottom: 1.5rem;
+}
+.alert-success { color: #0f5132; background-color: #d1e7dd; border-color: #badbcc; }
+.alert-danger { color: #842029; background-color: #f8d7da; border-color: #f5c2c7; }
+.alert-info { color: #055160; background-color: #cff4fc; border-color: #b6effb; }
+
+/* Auth forms (login, register) */
+.auth-form {
+    max-width: 400px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.3rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.auth-form h2 {
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+.auth-form p {
+    margin-top: 1rem;
+    text-align: center;
+    font-size: 0.9em;
+}
+
+/* Company view */
+.company-profile-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+.company-logo-view {
+    max-width: 150px;
+    max-height: 100px;
+    object-fit: contain;
+    margin-right: 20px;
+    border: 1px solid #eee;
+    padding: 5px;
+    border-radius: 4px;
+}
+.company-logo-placeholder-view {
+    width: 150px;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    color: #6c757d;
+    background-color: #f8f9fa;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-right: 20px;
+}
+.company-profile-header h1 {
+    margin-bottom: 0;
+}
+.company-profile-details p {
+    margin-bottom: 0.75rem;
+}
+.company-profile-details strong {
+    min-width: 150px;
+    display: inline-block;
+    font-weight: 600;
+    color: #495057;
+}
+.actions-bar {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid #e9ecef;
+}
+.actions-bar .button {
+    margin-right: 10px;
+}
+
+/* Footer */
+footer {
+    margin-top: 3rem;
+    padding: 1.5rem 0;
+    background-color: #e9ecef;
+    color: #6c757d;
+    text-align: center;
+    font-size: 0.9em;
+    border-top: 1px solid #dee2e6;
+}
+footer p {
+    margin-bottom: 0;
+}
+
+/* Responsive adjustments */
+/* Medium devices (tablets, less than 992px) */
+@media (max-width: 991.98px) {
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: -280px; /* Paslėptas už ekrano ribų (plotis + šiek tiek) */
+        width: 280px; /* Fiksuotas plotis mobiliajame meniu */
+        max-width: 85%; /* Kad neužimtų viso ekrano labai mažuose įrenginiuose */
+        height: 100vh; /* Visas ekrano aukštis */
+        /* transition: left 0.3s ease-in-out; jau yra aukščiau */
+        border-right: 1px solid #dee2e6; /* Paliekam ribą */
+        box-shadow: 0 0 20px rgba(0,0,0,0.1); /* Ryškesnis šešėlis mobiliajame */
+    }
+
+    .sidebar.open {
+        left: 0; /* Įslenka į ekraną */
+    }
+
+    .sidebar-header {
+        display: flex; 
+        /* padding-right: 15px; nebereikia */
+    }
+
+    .sidebar-toggle {
+        display: block !important; /* Rodome hamburger mygtuką (su !important testavimui) */
+        /* TEMPORARY DEBUGGING STYLES - PAAŠALINKITE VĖLIAU */
+        width: 60px !important;
+        height: 60px !important;
+        background-color: limegreen !important; /* Labai ryški spalva */
+        border: 3px solid red !important;
+        z-index: 99999 !important; /* Užtikrinti, kad virš visko */
+    }
+
+    .sidebar-nav ul {
+        flex-direction: column;
+    }
+    .sidebar-footer {
+        margin-top: 15px; /* Sumažiname, nes meniu gali būti ilgesnis */
+        padding-top: 15px;
+    }
+    .sidebar-footer .button {
+        width: 100%;
+        margin-top: 5px; /* Paliekam tarpą tarp mygtukų */
+        margin-bottom: 5px;
+    }
+
+    /* Fono užtemdymas, kai meniu atidarytas */
+    body.sidebar-open-overlay::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+        z-index: 1029; /* Žemiau nei sidebar, bet virš turinio */
+        display: block;
+    }
+
+    /* Hamburger ikonos transformacija į "X" */
+    .sidebar.open .sidebar-toggle span:nth-child(1) {
+        transform: translateY(6px) rotate(45deg);
+    }
+    .sidebar.open .sidebar-toggle span:nth-child(2) {
+        opacity: 0;
+    }
+    .sidebar.open .sidebar-toggle span:nth-child(3) {
+        transform: translateY(-6px) rotate(-45deg);
+    }
+
+    .main-content {
+        margin-left: 0;
+        /* transition: margin-left 0.3s ease-in-out; jau yra aukščiau */
+    }
+    .content-inner {
+        padding: 20px;
+    }
+}
+
+/* Small devices (landscape phones, less than 768px) */
+@media (max-width: 767.98px) {
+    .content-inner {
+        padding: 15px;
+    }
+    .table-responsive-wrapper {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    .form-group input[type="text"],
+    .form-group input[type="email"],
+    .form-group input[type="password"],
+    .form-group input[type="tel"],
+    .form-group input[type="url"],
+    .form-group input[type="file"],
+    .form-group textarea,
+    .form-group select {
+        font-size: 15px;
+    }
+    .button {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.95rem;
+    }
+    .company-profile-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .company-logo-view, .company-logo-placeholder-view {
+        margin-right: 0;
+        margin-bottom: 15px;
+    }
+    .company-profile-details strong {
+        display: block;
+        margin-bottom: 2px;
+        min-width: auto;
+    }
+    .actions-bar .button {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    .actions-bar .button:last-child {
+        margin-bottom: 0;
+    }
+}
+
+/* Extra small devices (portrait phones, less than 576px) */
+@media (max-width: 575.98px) {
+    body {
+        font-size: 15px;
+    }
+    .content-inner {
+        padding: 15px 10px;
+    }
+    .sidebar-brand-link {
+        font-size: 1.4rem;
+    }
+    .auth-form {
+        padding: 1.5rem;
+        margin: 1rem auto;
+    }
+    h1 { font-size: 1.8rem; }
+    h2 { font-size: 1.5rem; }
+}
