@@ -862,3 +862,22 @@ footer p {
         padding: 0 !important;
     }
 }
+
+/* Styles for view.php with icons */
+.field-with-icon {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5em; /* Or adjust as needed */
+}
+
+.field-with-icon .material-icons {
+    margin-right: 8px;
+    font-size: 1.2em; /* Adjust icon size if needed */
+    vertical-align: middle; /* Helps align icons with text if not using flex */
+}
+
+/* Adjust specific icon sizes or positions if needed */
+.company-profile-details h3 .material-icons {
+     margin-right: 4px;
+     font-size: 1.5em; /* Larger for headings */
+}
