@@ -274,6 +274,30 @@ switch ($page) {
                     redirect('companies');
                 }
                 $view_data['company'] = $company;
+                if ($company) {
+                    $view_data['meta_title'] = e($company['pavadinimas']) . ' - Rekvizitai'; // Dynamic title
+
+                    // Construct a meta description
+                    $description_parts = [];
+                    if (!empty($company['pavadinimas'])) {
+                        $description_parts[] = "Įmonės " . e($company['pavadinimas']) . " rekvizitai.";
+                    }
+                    if (!empty($company['adresas_gatve'])) {
+                        $description_parts[] = e($company['adresas_gatve']);
+                    }
+                    if (!empty($company['adresas_miestas'])) {
+                        $description_parts[] = e($company['adresas_miestas']);
+                    }
+                    if (!empty($company['imones_kodas'])) {
+                        $description_parts[] = "Įmonės kodas: " . e($company['imones_kodas']);
+                    }
+                    // Join parts, ensuring not too long. Limit to around 160 chars.
+                    $meta_desc_full = implode(', ', $description_parts);
+                    if (mb_strlen($meta_desc_full) > 160) {
+                        $meta_desc_full = mb_substr($meta_desc_full, 0, 157) . '...';
+                    }
+                    $view_data['meta_description'] = $meta_desc_full;
+                }
                 $view_template = 'companies/view.php';
                 break;
 
