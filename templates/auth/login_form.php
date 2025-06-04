@@ -38,7 +38,7 @@ $view_data['meta_title'] = trans('login_meta_title');
             style="width: 100%; margin-bottom: 16px;">
         </md-outlined-text-field>
 
-        <md-filled-button type="submit" style="width: 100%; --md-filled-button-container-shape: var(--md-sys-shape-corner-extra-small);">
+        <md-filled-button type="submit" style="width: 100%;">
             <?php echo e(trans('login_button')); ?>
         </md-filled-button>
     </form>
