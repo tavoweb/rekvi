@@ -465,28 +465,37 @@ switch ($page) {
         $admin_action = $action ?? 'dashboard';
 
         switch ($admin_action) {
-            case 'generate_sitemap':
+            case 'sitemap': // This case now just displays the sitemap page
                 $auth->requireAdmin();
-                $sitemapGenerator = new SitemapGenerator($db, SITE_BASE_URL);
-                if ($sitemapGenerator->generate()) {
-                    set_flash_message('success_message', 'Sitemap failai (indeksas ir dalys) sėkmingai sugeneruoti!');
+                $view_template = 'admin/sitemap.php';
+                break;
+
+            case 'generate_sitemap_action': // This case handles the actual generation
+                $auth->requireAdmin();
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $sitemapGenerator = new SitemapGenerator($db, SITE_BASE_URL);
+                    if ($sitemapGenerator->generate()) {
+                        set_flash_message('sitemap_success', 'Sitemap failai (indeksas ir dalys) sėkmingai sugeneruoti!');
+                    } else {
+                        set_flash_message('sitemap_error', 'Klaida generuojant sitemap failus.');
+                    }
                 } else {
-                    set_flash_message('error_message', 'Klaida generuojant sitemap failus.');
+                    // Should not be accessed via GET
+                    set_flash_message('sitemap_error', 'Netinkamas užklausos metodas sitemap generavimui.');
                 }
-                redirect('admin', 'users');
+                redirect('admin', 'sitemap'); // Redirect back to the sitemap page to show messages
                 break;
             case 'users':
                 $view_data['users'] = $auth->getAllUsers();
                 $view_template = 'admin/users_list.php';
                 break;
-                // case 'dashboard':
+            case 'dashboard':
+                $view_template = 'admin/dashboard.php';
+                break;
             default:
-                // For now, if no specific admin action, or it's 'dashboard',
-                // redirect to home or show a simple admin dashboard.
-                // $view_template = 'admin/dashboard.php';
-                // Decided to redirect to home if no specific admin action is matched for now.
-                set_flash_message('info_message', 'Pasirinkite veiksmą administratoriaus skydelyje.');
-                redirect('home'); // Or 'admin/dashboard' if you create that page.
+                // If no specific admin action is matched, or if it's an unknown action,
+                // redirect to the admin dashboard.
+                redirect('admin', 'dashboard');
                 break;
         }
         break;
