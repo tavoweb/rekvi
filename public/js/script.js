@@ -8,34 +8,27 @@ document.addEventListener('DOMContentLoaded', function() {
         };
     }
 
-    // Get elements
+    // Sidebar toggle logic (remains unchanged)
     const sidebarToggles = document.querySelectorAll('.sidebar-toggle');
     const sidebar = document.querySelector('.sidebar');
     const sidebarOverlay = document.querySelector('.sidebar-overlay');
     const body = document.body;
     
-    // Toggle sidebar function
     function toggleSidebar() {
         sidebar.classList.toggle('open');
         body.classList.toggle('sidebar-open-overlay');
-        
-        // Toggle overlay
         if (sidebarOverlay) {
             sidebarOverlay.classList.toggle('active');
         }
-        
-        // Toggle active class on all toggle buttons
         sidebarToggles.forEach(toggle => {
             toggle.classList.toggle('active');
         });
     }
     
-    // Add click event listener to all toggle buttons
     sidebarToggles.forEach(toggle => {
         toggle.addEventListener('click', toggleSidebar);
     });
     
-    // Close sidebar when clicking on overlay
     if (sidebarOverlay) {
         sidebarOverlay.addEventListener('click', function() {
             if (sidebar.classList.contains('open')) {
@@ -43,32 +36,38 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
-    
-    // Optional: Close sidebar when clicking on links (uncomment if needed)
-    // const sidebarLinks = document.querySelectorAll('.sidebar-nav a');
-    // sidebarLinks.forEach(link => {
-    //     link.addEventListener('click', () => {
-    //         if (sidebar.classList.contains('open') && window.innerWidth < 992) {
-    //             toggleSidebar();
-    //         }
-    //     });
-    // });
 
-    // Search suggestions logic
-    const searchInput = document.getElementById('search-input');
-    const suggestionsContainer = document.getElementById('search-suggestions-container');
+    // Generalized Search Suggestions Function
+    // IMPORTANT: The suggestionsUrl parameter is expected to be the base path for suggestions,
+    // for example, 'companies/search_suggestions'. The query parameter will be appended.
+    function initializeSearchSuggestions(inputId, containerId, formId, suggestionsUrl) {
+        const searchInput = document.getElementById(inputId);
+        const suggestionsContainer = document.getElementById(containerId);
+        const searchForm = formId ? document.getElementById(formId) : (searchInput ? searchInput.closest('form') : null);
 
-    if (searchInput && suggestionsContainer) {
+        if (!searchInput || !suggestionsContainer) {
+            // console.warn(`Search input or suggestions container not found for: ${inputId}, ${containerId}`);
+            return;
+        }
+
         searchInput.addEventListener('input', debounce(async function() {
             const query = searchInput.value.trim();
             suggestionsContainer.innerHTML = ''; // Clear previous suggestions
 
+            if (query.length === 0) { // Hide suggestions if input is cleared
+                suggestionsContainer.style.display = 'none';
+                return;
+            }
+
             if (query.length > 1) {
                 try {
-                    const response = await fetch(`companies/search_suggestions?query=${encodeURIComponent(query)}`);
+                    // Construct the full URL correctly
+                    const fullSuggestionsUrl = `${suggestionsUrl}?query=${encodeURIComponent(query)}`;
+                    const response = await fetch(fullSuggestionsUrl);
+
                     if (!response.ok) {
-                        // Handle HTTP errors, e.g., response.status
-                        console.error('Search suggestions fetch error:', response.status);
+                        console.error('Search suggestions fetch error:', response.status, response.statusText);
+                        suggestionsContainer.style.display = 'none';
                         return;
                     }
                     const data = await response.json();
@@ -76,28 +75,39 @@ document.addEventListener('DOMContentLoaded', function() {
                     if (data && data.length > 0) {
                         data.forEach(suggestion => {
                             const a = document.createElement('a');
-                            a.textContent = suggestion.pavadinimas;
-                            a.href = '#'; // Prevent navigation, action handled by click listener
-                            a.classList.add('suggestion-item'); // For styling
+                            a.textContent = suggestion.pavadinimas; // Assuming 'pavadinimas' is the field to display
+                            a.href = '#'; // Prevent navigation initially
+                            a.classList.add('suggestion-item');
 
                             a.addEventListener('click', function(e) {
-                                e.preventDefault(); // Prevent default anchor action
-                                searchInput.value = suggestion.pavadinimas;
+                                e.preventDefault();
+                                searchInput.value = suggestion.pavadinimas; // Or suggestion.id if needed for form
                                 suggestionsContainer.innerHTML = '';
-                                if (searchInput.form) {
-                                    searchInput.form.submit();
+                                suggestionsContainer.style.display = 'none';
+                                if (searchForm) {
+                                    // If the form has a specific 'search_query' field, ensure it's set,
+                                    // otherwise the input's own name attribute should handle it.
+                                    const formQueryInput = searchForm.elements['search_query'];
+                                    if (formQueryInput) {
+                                        formQueryInput.value = suggestion.pavadinimas;
+                                    }
+                                    searchForm.submit();
+                                } else {
+                                    console.warn("Search form not found for input:", inputId);
                                 }
                             });
                             suggestionsContainer.appendChild(a);
                         });
+                        suggestionsContainer.style.display = 'block'; // Show suggestions
                     } else {
-                        // No suggestions found, could display a message if desired
-                        // suggestionsContainer.innerHTML = '<div class="suggestion-item-none">No suggestions found.</div>';
+                        suggestionsContainer.style.display = 'none'; // Hide if no suggestions
                     }
                 } catch (error) {
                     console.error('Error fetching search suggestions:', error);
-                    // Optionally display an error message in the suggestionsContainer
+                    suggestionsContainer.style.display = 'none';
                 }
+            } else {
+                 suggestionsContainer.style.display = 'none'; // Hide if query too short
             }
         }, 300));
 
@@ -105,7 +115,39 @@ document.addEventListener('DOMContentLoaded', function() {
         document.addEventListener('click', function(event) {
             if (!suggestionsContainer.contains(event.target) && event.target !== searchInput) {
                 suggestionsContainer.innerHTML = '';
+                suggestionsContainer.style.display = 'none';
             }
         });
+         // Ensure the form associated with the search input exists for submission.
+        if (searchInput && !searchForm) {
+            // console.warn(`Search input ${inputId} does not have an associated form or the formId ${formId} was not found.`);
+        }
     }
+
+    // --- Instantiate Search Suggestions ---
+    // The common base URL for suggestions.
+    // Fetch will resolve this relative to the current page's URL.
+    // e.g. if on domain.com/index.php?url=home, it becomes domain.com/companies/search_suggestions
+    // e.g. if on domain.com/index.php?url=admin/users, it becomes domain.com/companies/search_suggestions
+    // This relies on the server routing 'companies/search_suggestions' correctly from the application root.
+    const COMMON_SUGGESTIONS_URL = 'companies/search_suggestions';
+
+    // Initialize for sidebar search
+    // The sidebar search form doesn't have an ID in the original HTML structure read from header.php
+    // We will rely on searchInput.closest('form') within the function.
+    // The input ID is 'search-input' and container is 'search-suggestions-container'.
+    const sidebarSearchInput = document.getElementById('search-input');
+    let sidebarFormId = null;
+    if (sidebarSearchInput && sidebarSearchInput.form) {
+        // If the form exists but has no ID, assign one dynamically for robustness if needed,
+        // though closest('form') inside the function is generally preferred.
+        if (!sidebarSearchInput.form.id) {
+            sidebarSearchInput.form.id = 'sidebar-search-form-dynamic';
+        }
+        sidebarFormId = sidebarSearchInput.form.id;
+    }
+    initializeSearchSuggestions('search-input', 'search-suggestions-container', sidebarFormId, COMMON_SUGGESTIONS_URL);
+
+    // Initialize for home page search
+    initializeSearchSuggestions('home-search-input', 'home-search-suggestions-container', 'home-search-form', COMMON_SUGGESTIONS_URL);
 });
