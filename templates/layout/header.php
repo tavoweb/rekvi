@@ -5,8 +5,10 @@
 $isLoggedIn = $auth->isLoggedIn(); 
 $currentUsername = $auth->getCurrentUsername();
 $currentUserRole = $auth->getCurrentUserRole();
-$currentPage = $_GET['page'] ?? 'home';
-$currentAction = $_GET['action'] ?? '';
+// $currentPage = $_GET['page'] ?? 'home';
+// $currentAction = $_GET['action'] ?? '';
+$currentPage = $view_data['current_page_resolved'] ?? 'home';
+$currentAction = $view_data['current_action_resolved'] ?? '';
 ?>
 <!DOCTYPE html>
 <html lang="lt">
@@ -51,7 +53,7 @@ $currentAction = $_GET['action'] ?? '';
                 <li><a href="<?php echo url('companies', 'create'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'create') ? 'active' : ''; ?>">Pridėti įmonę</a></li>
                 <?php if ($auth->isAdmin()): ?>
                     <li class="sidebar-nav-separator">Administratoriaus Skydelis</li>
-                    <li><a href="<?php echo url('admin', 'dashboard'); ?>" class="<?php echo ($currentPage === 'admin' && ($currentAction === 'dashboard' || $currentAction === null || $currentAction === '')) ? 'active' : ''; ?>">Pagrindinis Skydelis</a></li>
+                    <li><a href="<?php echo url('admin', 'dashboard'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'dashboard') ? 'active' : ''; ?>">Pagrindinis Skydelis</a></li>
                     <li><a href="<?php echo url('admin', 'users'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'users') ? 'active' : ''; ?>">Vartotojų Valdymas</a></li>
                     <li><a href="<?php echo url('companies', 'import'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'import') ? 'active' : ''; ?>">Importuoti Įmones</a></li>
                     <li><a href="<?php echo url('admin', 'sitemap'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'sitemap') ? 'active' : ''; ?>">Sitemap Generavimas</a></li>

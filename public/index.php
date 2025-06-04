@@ -510,6 +510,14 @@ switch ($page) {
 
 $view_data['auth'] = $auth;
 
+// Pass resolved page and action to header for consistent active link detection
+$view_data['current_page_resolved'] = $page; // $page is the main page segment (e.g., 'home', 'admin', 'companies')
+if ($page === 'admin') {
+    $view_data['current_action_resolved'] = $admin_action; // $admin_action is resolved (e.g. 'dashboard', 'users')
+} else {
+    $view_data['current_action_resolved'] = $action; // $action is the general action segment
+}
+
 include __DIR__ . '/../templates/layout/header.php';
 include __DIR__ . '/../templates/' . $view_template;
 include __DIR__ . '/../templates/layout/footer.php';

@@ -945,3 +945,35 @@ footer p {
     border-top: 1px solid #ddd; /* Optional: a top border */
     border-bottom: 1px solid #ddd; /* Optional: a bottom border */
 }
+
+/* CSS for home page search */
+.home-search-container {
+    margin: 30px auto;
+    padding: 25px;
+    background-color: #f7f7f7;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    text-align: center;
+    max-width: 750px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.home-search-container h2 { margin-bottom: 20px; font-size: 2em; color: #333; }
+#home-search-form { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+#home-search-input { flex-grow: 1; margin-right: 10px; height: 48px; }
+#home-search-form .button-primary { height: 48px; padding-left: 25px; padding-right: 25px; }
+#home-search-suggestions-container.search-suggestions-container {
+    position: relative;
+    max-width: calc(100% - 130px); /* Adjust this based on button width if needed */
+    margin: -10px auto 0 auto; /* Negative margin to pull it up slightly */
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-top: none;
+    z-index: 1000;
+    text-align: left;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+}
+.search-suggestions-container .suggestion-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 1em; color: #444; }
+.search-suggestions-container .suggestion-item:last-child { border-bottom: none; }
+.search-suggestions-container .suggestion-item:hover { background-color: #e9e9e9; color: #000; }
