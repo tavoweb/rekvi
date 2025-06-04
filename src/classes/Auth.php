@@ -190,7 +190,7 @@ class Auth
 
     public function getAllUsers(): array
     {
-        $this->db->query("SELECT id, vartotojo_vardas, el_pastas, role, sukurimo_data AS created_at FROM " . $this->usersTable . " ORDER BY id ASC");
+        $this->db->query("SELECT id, vartotojo_vardas AS username, el_pastas AS email, role, sukurimo_data AS created_at FROM " . $this->usersTable . " ORDER BY id ASC");
         return $this->db->resultSet();
     }
 }
