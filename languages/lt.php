@@ -1,7 +1,7 @@
 <?php
 // languages/lt.php
 return [
-    // ... (all existing translations from previous steps)
+    // ... (all existing translations)
     'site_title' => 'Rekvizitų Valdymo Sistema',
     'meta_description_default' => 'Patogi įmonių rekvizitų paieškos ir valdymo sistema.',
     'search_placeholder' => 'Ieškoti įmonės...',
@@ -20,7 +20,7 @@ return [
     'logged_out_successfully' => 'Sėkmingai atsijungėte!',
     'incorrect_username_or_password' => 'Neteisingas vartotojo vardas/el.paštas arba slaptažodis.',
     'page_not_found' => 'Atsiprašome, ieškomas puslapis nerastas.',
-    'error_creating_logo_dir' => 'Klaida: Nepavyko sukurti logotipų katalogo: {path}', // Placeholder was {path}
+    'error_creating_logo_dir' => 'Klaida: Nepavyko sukurti logotipų katalogo: {path}',
     'error_logo_dir_not_writable' => 'Klaida: Logotipų katalogas ({path}) nėra įrašomas (writable). Patikrinkite teises.',
     'system_error_try_later' => 'Atsiprašome, įvyko sisteminė klaida. Bandykite vėliau.',
     'toggle_navigation' => 'Perjungti navigaciją',
@@ -148,7 +148,6 @@ return [
     'no_users_found' => 'Vartotojų nerasta.',
     'users_list_meta_title' => 'Vartotojų Sąrašas - Rekvizitų Valdymo Sistema',
     'copyright_text' => '&copy; {year} RekvizitaiPRO. Visos teisės saugomos.',
-    // Keys for index.php logic
     'company_created_successfully' => 'Įmonė sėkmingai pridėta.',
     'company_updated_successfully' => 'Įmonės duomenys sėkmingai atnaujinti.',
     'company_deleted_successfully' => 'Įmonė sėkmingai ištrinta.',
@@ -160,9 +159,8 @@ return [
     'invalid_delete_request' => 'Neteisinga užklausa trynimui.',
     'company_code_exists' => 'Įmonė su tokiu įmonės kodu jau egzistuoja.',
     'name_and_code_required' => 'Pavadinimas ir įmonės kodas yra privalomi.',
-    'logo_upload_error_generic' => 'Klaida įkeliant logotipą.', // Generic fallback
     'user_registered_successfully' => 'Vartotojas sėkmingai užregistruotas. Prašome prisijungti.',
-    'company_meta_title_suffix_rekvizitai' => 'Rekvizitai', // Used by index.php when constructing meta title for company view
+    'company_meta_title_suffix_rekvizitai' => 'Rekvizitai',
     'company_meta_description_prefix' => 'Įmonės {name} rekvizitai.',
     'company_meta_description_address_street' => '{street}',
     'company_meta_description_address_city' => '{city}',
@@ -175,25 +173,29 @@ return [
     'csv_import_file_read_error' => 'Nepavyko nuskaityti CSV failo.',
     'csv_import_upload_error_code' => 'Klaida įkeliant failą. Klaidos kodas: {code}',
     'csv_import_please_select_file' => 'Prašome pasirinkti CSV failą.',
-
-    // Auth Class Messages (ensure these match keys used in Auth.php)
     'auth_username_required' => 'Vartotojo vardas yra privalomas.',
-    'auth_username_min_length' => 'Vartotojo vardas turi būti bent {length} simbolių ilgio.',
-    'auth_username_max_length' => 'Vartotojo vardas negali būti ilgesnis nei {length} simbolių.',
+    'auth_username_length' => 'Vartotojo vardas turi būti nuo {min} iki {max} simbolių ilgio.',
+    'auth_username_format' => 'Vartotojo vardas gali turėti tik raides (a-z, A-Z), skaičius (0-9) ir apatinį brūkšnį (_).',
     'auth_username_taken' => 'Toks vartotojo vardas jau užimtas.',
     'auth_email_required' => 'El. paštas yra privalomas.',
     'auth_email_invalid' => 'Neteisingas el. pašto formatas.',
-    'auth_email_taken' => 'Toks el. paštas jau užregistruotas.',
+    'auth_email_taken' => 'Šis el. paštas jau registruotas.',
     'auth_password_required' => 'Slaptažodis yra privalomas.',
     'auth_password_min_length' => 'Slaptažodis turi būti bent {length} simbolių ilgio.',
-    'auth_password_confirm_required' => 'Slaptažodžio patvirtinimas yra privalomas.',
+    'auth_confirm_password_required' => 'Pakartokite slaptažodį.',
     'auth_passwords_do_not_match' => 'Slaptažodžiai nesutampa.',
-    'auth_registration_success_message_key' => 'user_registered_successfully', // Key for the success message
+    'auth_password_hash_failed' => 'Nepavyko užkoduoti slaptažodžio.',
+    'auth_registration_failed_generic' => 'Registracija nepavyko. Bandykite vėliau.',
+    'auth_registration_system_error' => 'Sistemos klaida registruojant vartotoją.',
+    'auth_login_required' => 'Norėdami pasiekti šį puslapį, turite prisijungti.',
+    'auth_admin_required' => 'Neturite teisių pasiekti šį resursą. Kreipkitės į administratorių.',
+    'auth_registration_success_message_key' => 'user_registered_successfully',
 
-    // handle_logo_upload function messages (ensure these match keys used in helpers.php)
-    'logo_err_invalid_type' => 'Netinkamas failo tipas. Leidžiama JPG, PNG, GIF.',
-    'logo_err_too_large' => 'Failas per didelis. Maksimalus dydis 2MB.',
-    'logo_err_invalid_extension' => 'Netinkamas failo plėtinys. Leidžiama JPG, JPEG, PNG, GIF.',
+    // Raktai handle_logo_upload() klaidoms
+    'logo_err_invalid_type' => 'Netinkamas failo tipas. Leidžiama {types}.',
+    'logo_err_too_large' => 'Failas per didelis. Maksimalus dydis {size}.',
+    'logo_err_invalid_extension' => 'Netinkamas failo plėtinys. Leidžiama {extensions}.',
     'logo_err_upload_failed' => 'Klaida įkeliant failą į serverį.',
-    'logo_err_upload_error_code' => 'Failo įkėlimo klaida. Kodas: {error_code}',
+    'logo_err_upload_error_code' => 'Failo įkėlimo klaida. Kodas: {code}.',
+    'logo_upload_error_generic' => 'Klaida įkeliant logotipą.',
 ];

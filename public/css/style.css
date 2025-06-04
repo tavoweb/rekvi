@@ -977,3 +977,61 @@ footer p {
 .search-suggestions-container .suggestion-item { padding: 12px 15px; cursor: pointer; border-bottom: 1px solid #f0f0f0; font-size: 1em; color: #444; }
 .search-suggestions-container .suggestion-item:last-child { border-bottom: none; }
 .search-suggestions-container .suggestion-item:hover { background-color: #e9e9e9; color: #000; }
+
+/* Styles for buttons with Material Icons */
+.button .material-icons, button .material-icons {
+    margin-right: 6px; /* Space between icon and text */
+    vertical-align: middle; /* Align icon with text */
+    font-size: 1.2em; /* Slightly larger icon, adjust as needed */
+    line-height: 1; /* Ensure icon does not affect button height too much */
+}
+
+/* For small buttons, icons might need to be smaller */
+.button.button-small .material-icons {
+    font-size: 1.1em;
+    margin-right: 4px;
+}
+
+/* Ensure buttons with only icons (if any) are styled correctly */
+.button.icon-only .material-icons {
+    margin-right: 0;
+}
+.button.icon-only {
+    padding-left: 0.75rem; /* Adjust padding for icon-only buttons */
+    padding-right: 0.75rem;
+}
+
+/* Styles for home page search section if it uses .card */
+.home-search-section.card {
+    padding: 20px; /* Add padding if not already handled by .card */
+    text-align: center; /* Center the contents of the card */
+}
+
+.home-search-section.card h2 {
+    margin-bottom: 15px; /* Space below the title "Ieškoti įmonės..." */
+    font-size: 1.5rem; /* Adjust title size */
+}
+
+.home-search-section.card .search-form {
+    display: flex;
+    max-width: 600px; /* Limit width of the search form */
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.home-search-section.card .search-input-field {
+    flex-grow: 1;
+    margin-right: 8px; /* Space between input and button */
+}
+
+.home-search-section.card .search-submit-button .material-icons {
+    margin-right: 0; /* No margin if only icon in button */
+}
+
+/* Ensure suggestion container for home search is positioned correctly */
+.home-search-section.card .suggestions-container {
+    position: relative; /* Or absolute if relative to form */
+    /* The existing #home-search-suggestions-container styles might need review based on this structure */
+    /* For now, relying on existing general .suggestions-container styles if any, or specific ID styles. */
+    /* The specific styles for #home-search-suggestions-container from previous CSS block should apply */
+}

@@ -1,7 +1,7 @@
 <?php
 // languages/en.php
 return [
-    // ... (all existing translations from previous steps)
+    // ... (all existing translations)
     'site_title' => 'Company Details Management System',
     'meta_description_default' => 'Convenient system for searching and managing company details.',
     'search_placeholder' => 'Search for company...',
@@ -148,7 +148,6 @@ return [
     'no_users_found' => 'No users found.',
     'users_list_meta_title' => 'User List - Company Details Management System',
     'copyright_text' => '&copy; {year} RekvizitaiPRO. All rights reserved.',
-    // Keys for index.php logic
     'company_created_successfully' => 'Company added successfully.',
     'company_updated_successfully' => 'Company details updated successfully.',
     'company_deleted_successfully' => 'Company deleted successfully.',
@@ -160,9 +159,8 @@ return [
     'invalid_delete_request' => 'Invalid request for deletion.',
     'company_code_exists' => 'A company with this company code already exists.',
     'name_and_code_required' => 'Name and company code are required.',
-    'logo_upload_error_generic' => 'Error uploading logo.',
     'user_registered_successfully' => 'User registered successfully. Please login.',
-    'company_meta_title_suffix_rekvizitai' => 'Details', // Used by index.php when constructing meta title for company view
+    'company_meta_title_suffix_rekvizitai' => 'Details',
     'company_meta_description_prefix' => 'Company {name} details.',
     'company_meta_description_address_street' => '{street}',
     'company_meta_description_address_city' => '{city}',
@@ -175,25 +173,29 @@ return [
     'csv_import_file_read_error' => 'Failed to read CSV file.',
     'csv_import_upload_error_code' => 'Error uploading file. Error code: {code}',
     'csv_import_please_select_file' => 'Please select a CSV file.',
-
-    // Auth Class Messages
     'auth_username_required' => 'Username is required.',
-    'auth_username_min_length' => 'Username must be at least {length} characters long.',
-    'auth_username_max_length' => 'Username cannot be longer than {length} characters.',
+    'auth_username_length' => 'Username must be between {min} and {max} characters long.',
+    'auth_username_format' => 'Username can only contain letters (a-z, A-Z), numbers (0-9), and underscores (_).',
     'auth_username_taken' => 'This username is already taken.',
     'auth_email_required' => 'Email is required.',
     'auth_email_invalid' => 'Invalid email format.',
     'auth_email_taken' => 'This email is already registered.',
     'auth_password_required' => 'Password is required.',
     'auth_password_min_length' => 'Password must be at least {length} characters long.',
-    'auth_password_confirm_required' => 'Password confirmation is required.',
+    'auth_confirm_password_required' => 'Please confirm your password.',
     'auth_passwords_do_not_match' => 'Passwords do not match.',
+    'auth_password_hash_failed' => 'Failed to hash password.',
+    'auth_registration_failed_generic' => 'Registration failed. Please try again later.',
+    'auth_registration_system_error' => 'System error during user registration.',
+    'auth_login_required' => 'You must be logged in to access this page.',
+    'auth_admin_required' => 'You do not have permission to access this resource. Contact an administrator.',
     'auth_registration_success_message_key' => 'user_registered_successfully',
 
-    // handle_logo_upload function messages
-    'logo_err_invalid_type' => 'Invalid file type. Allowed JPG, PNG, GIF.',
-    'logo_err_too_large' => 'File too large. Maximum size 2MB.',
-    'logo_err_invalid_extension' => 'Invalid file extension. Allowed JPG, JPEG, PNG, GIF.',
+    // Keys for handle_logo_upload() errors
+    'logo_err_invalid_type' => 'Invalid file type. Allowed types: {types}.',
+    'logo_err_too_large' => 'File is too large. Maximum size is {size}.',
+    'logo_err_invalid_extension' => 'Invalid file extension. Allowed extensions: {extensions}.',
     'logo_err_upload_failed' => 'Error uploading file to server.',
-    'logo_err_upload_error_code' => 'File upload error. Code: {error_code}',
+    'logo_err_upload_error_code' => 'File upload error. Code: {code}.',
+    'logo_upload_error_generic' => 'Error uploading logo.',
 ];

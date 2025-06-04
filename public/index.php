@@ -118,14 +118,12 @@ switch ($page) {
                 set_flash_message('success_message', trans($result['message_key'] ?? 'user_registered_successfully'));
                 redirect('login');
             } else {
-                // Translate error messages from Auth class
                 $translated_errors = [];
-                foreach($result['errors'] as $key => $error_key_or_message) {
-                    // If $error_key_or_message is an array, it means it has a key and params
-                    if (is_array($error_key_or_message) && isset($error_key_or_message['key'])) {
-                         $translated_errors[$key] = trans($error_key_or_message['key'], $error_key_or_message['params'] ?? []);
-                    } else {
-                         $translated_errors[$key] = trans($error_key_or_message);
+                foreach ($result['errors'] as $field => $error_data) {
+                    if (is_array($error_data) && isset($error_data['key'])) {
+                        $translated_errors[$field] = trans($error_data['key'], $error_data['params'] ?? []);
+                    } elseif (is_string($error_data)) { // Fallback for simple string error keys if any
+                        $translated_errors[$field] = trans($error_data);
                     }
                 }
                 $view_data['errors'] = $translated_errors;

@@ -150,4 +150,100 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Initialize for home page search
     initializeSearchSuggestions('home-search-input', 'home-search-suggestions-container', 'home-search-form', COMMON_SUGGESTIONS_URL);
+
+    // Load More Companies Functionality
+    const loadMoreButton = document.getElementById('load-more-companies');
+    if (loadMoreButton) {
+        const originalButtonText = loadMoreButton.textContent; // Store original translated text
+
+        loadMoreButton.addEventListener('click', async function() {
+            let currentPage = parseInt(this.dataset.page || '1');
+            const searchQuery = this.dataset.searchQuery || '';
+            const companiesTableBody = document.querySelector('#companies-table tbody');
+
+            if (!companiesTableBody) {
+                console.error('Companies table body not found.');
+                return;
+            }
+
+            this.disabled = true;
+            this.textContent = 'Loading...'; // Hardcoded for now, ideally translatable
+
+            try {
+                const nextPage = currentPage + 1;
+                // Construct URL relative to the domain root.
+                // Assumes SITE_BASE_URL is not needed here if paths are correctly handled by server routing.
+                // If your AJAX URLs are absolute, you might need to pass SITE_BASE_URL to JS.
+                let ajaxUrl = `companies/load_more_companies?ajax=1&page=${nextPage}`;
+                if (searchQuery) {
+                    ajaxUrl += `&search_query=${encodeURIComponent(searchQuery)}`;
+                }
+
+                // The fetch URL needs to be correctly formed. If the site is in a subfolder,
+                // or if url() helper in PHP generates full URLs, ensure this matches.
+                // For simplicity, assuming the endpoint 'companies/load_more_companies' is resolvable.
+                // If not, it might need to be prefixed, e.g. with window.location.origin or a base path.
+
+                const response = await fetch(ajaxUrl);
+                if (!response.ok) {
+                    console.error('Error loading more companies:', response.status, response.statusText);
+                    this.disabled = false;
+                    this.textContent = originalButtonText;
+                    // TODO: Show a user-friendly translated error message
+                    return;
+                }
+
+                const data = await response.json();
+
+                if (data.companies && data.companies.length > 0) {
+                    data.companies.forEach(company => {
+                        const row = companiesTableBody.insertRow();
+                        row.insertCell().textContent = company.pavadinimas;
+                        row.insertCell().textContent = company.imones_kodas;
+                        row.insertCell().textContent = company.pvm_kodas || '';
+
+                        let addressParts = [];
+                        if (company.adresas_gatve) addressParts.push(company.adresas_gatve);
+                        if (company.adresas_miestas) addressParts.push(company.adresas_miestas);
+                        if (company.adresas_pasto_kodas) addressParts.push(company.adresas_pasto_kodas);
+                        if (company.adresas_salis) addressParts.push(company.adresas_salis);
+                        row.insertCell().textContent = addressParts.join(', ');
+
+                        const actionsCell = row.insertCell();
+                        actionsCell.classList.add('actions-cell');
+
+                        // URLs for actions should be generated carefully.
+                        // Assuming url() PHP helper structure for consistency.
+                        // These might need to be built relative to a base path if not absolute.
+                        let viewUrl = `companies/view/${company.id}`;
+                        let editUrl = `companies/edit/${company.id}`;
+                        let deleteUrl = `companies/delete/${company.id}`;
+
+                        // For dynamic translated text in JS, it's best to get these from data attributes or pre-loaded JS vars.
+                        // Here, using hardcoded English as placeholders, assuming `trans()` calls won't work directly in JS.
+                        // A better approach would be to have these action links fully formed in the JSON response if they need to be dynamic per language.
+                        // Or, pass `view_action_text`, `edit_action_text`, `delete_action_text` in `data` from PHP.
+                        // For now, this is a simplification.
+                        let actionsHTML = `<a href="${viewUrl}" class="button button-small button-outline">View</a>`; // Placeholder text
+                        if (data.isAdmin) {
+                            actionsHTML += ` <a href="${editUrl}" class="button button-small">Edit</a>`; // Placeholder text
+                            actionsHTML += ` <a href="${deleteUrl}" class="button button-small button-danger">Delete</a>`; // Placeholder text
+                        }
+                        actionsCell.innerHTML = actionsHTML;
+                    });
+                    this.dataset.page = nextPage;
+                    this.disabled = false;
+                    this.textContent = originalButtonText;
+                } else {
+                    this.textContent = 'No more companies'; // Hardcoded for now
+                    this.disabled = true;
+                }
+            } catch (error) {
+                console.error('AJAX request failed:', error);
+                this.disabled = false;
+                this.textContent = originalButtonText;
+                 // TODO: Show a user-friendly translated error message
+            }
+        });
+    }
 });
