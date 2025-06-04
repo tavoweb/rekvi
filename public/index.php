@@ -469,9 +469,9 @@ switch ($page) {
                 $auth->requireAdmin();
                 $sitemapGenerator = new SitemapGenerator($db, SITE_BASE_URL);
                 if ($sitemapGenerator->generate()) {
-                    set_flash_message('success_message', 'Sitemap generated successfully and saved to public/sitemap.xml.');
+                    set_flash_message('success_message', 'Sitemap failai (indeksas ir dalys) sėkmingai sugeneruoti!');
                 } else {
-                    set_flash_message('error_message', 'Failed to generate sitemap. Check server logs.');
+                    set_flash_message('error_message', 'Klaida generuojant sitemap failus.');
                 }
                 redirect('admin', 'users');
                 break;
