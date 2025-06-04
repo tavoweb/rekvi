@@ -87,17 +87,23 @@ if (!$company) {
         </dl>
     </div>
 
-    <div class="company-view-actions">
-        <a href="<?php echo url('companies'); ?>" class="button button-outline">
-            <span class="material-icons">arrow_back</span> <?php echo e(trans('back_to_company_list_button')); ?>
-        </a>
+    <div class="company-view-actions" style="display: flex; gap: 8px; margin-top: 24px;">
+        <md-outlined-button href="<?php echo url('companies'); ?>">
+            <md-icon slot="icon">arrow_back</md-icon>
+            <?php echo e(trans('back_to_company_list_button')); ?>
+
+        </md-outlined-button>
         <?php if ($auth->isAdmin()): ?>
-            <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button">
-                <span class="material-icons">edit</span> <?php echo e(trans('edit_company_button')); ?>
-            </a>
-            <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-danger">
-                <span class="material-icons">delete</span> <?php echo e(trans('delete_company_button')); ?>
-            </a>
+            <md-filled-button href="<?php echo url('companies', 'edit', $company['id']); ?>">
+                <md-icon slot="icon">edit</md-icon>
+                <?php echo e(trans('edit_company_button')); ?>
+
+            </md-filled-button>
+            <md-filled-button href="<?php echo url('companies', 'delete', $company['id']); ?>" style="--md-filled-button-container-color: var(--md-sys-color-error); --md-filled-button-label-text-color: var(--md-sys-color-on-error);">
+                <md-icon slot="icon">delete</md-icon>
+                <?php echo e(trans('delete_company_button')); ?>
+
+            </md-filled-button>
         <?php endif; ?>
     </div>
 </div>
