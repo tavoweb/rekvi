@@ -1,32 +1,23 @@
 <?php
 // templates/admin/sitemap.php
+$view_data['meta_title'] = trans('sitemap_meta_title');
 
-// Page title
-$view_data['meta_title'] = 'Sitemap Generavimas';
-
-// Retrieve flash messages if any (passed from controller)
-$success_message = get_flash_message('sitemap_success');
-$error_message = get_flash_message('sitemap_error');
-
+// Display flash messages for sitemap generation results
+$sitemap_success_message = get_flash_message('sitemap_success');
+$sitemap_error_message = get_flash_message('sitemap_error');
 ?>
 
-<p><a href="<?php echo url('admin', 'dashboard'); ?>" class="button button-outline">&larr; Atgal į Administratoriaus Skydelį</a></p>
+<h1><?php echo e(trans('sitemap_generation')); ?></h1> <?php // Reusing existing key ?>
 
-<h1>Sitemap Generavimas</h1>
-
-<?php if ($success_message): ?>
-    <div class="alert alert-success"><?php echo e($success_message); ?></div>
+<?php if ($sitemap_success_message): ?>
+    <div class="alert alert-success flash-message"><?php echo e($sitemap_success_message); ?></div> <?php // This message comes from index.php, will be translated there ?>
+<?php endif; ?>
+<?php if ($sitemap_error_message): ?>
+    <div class="alert alert-danger flash-message"><?php echo e($sitemap_error_message); ?></div> <?php // This message comes from index.php, will be translated there ?>
 <?php endif; ?>
 
-<?php if ($error_message): ?>
-    <div class="alert alert-danger"><?php echo e($error_message); ?></div>
-<?php endif; ?>
-
-<p>Paspauskite mygtuką žemiau, kad sugeneruotumėte arba atnaujintumėte svetainės sitemap failus.</p>
-<p>Sitemap failai padeda paieškos sistemoms geriau indeksuoti jūsų svetainės turinį.</p>
+<p><?php echo e(trans('sitemap_description')); ?></p>
 
 <form action="<?php echo url('admin', 'generate_sitemap_action'); ?>" method="POST">
-    <button type="submit" class="button button-primary">Generuoti Sitemap</button>
+    <button type="submit" class="button"><?php echo e(trans('generate_sitemap_button')); ?></button>
 </form>
-
-<p style="margin-top: 20px;"><strong>Pastaba:</strong> Generavimo procesas gali užtrukti keletą akimirkų, priklausomai nuo svetainės dydžio.</p>

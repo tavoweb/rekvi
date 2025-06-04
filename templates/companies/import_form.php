@@ -1,47 +1,58 @@
-<p><a href="<?php echo url('admin', 'dashboard'); ?>" class="button button-outline">&larr; Atgal į Administratoriaus Skydelį</a></p>
 <?php
 // templates/companies/import_form.php
 $errors = $view_data['errors'] ?? [];
 $import_results = $view_data['import_results'] ?? null;
 
-$expected_csv_headers = [
-    'Pavadinimas', 'ImonesKodas', 'PVMKodas', 'VadovasVardasPavarde', 'Tinklalapis', 'DarboLaikas',
-    'AdresasSalis', 'AdresasMiestas', 'AdresasGatve', 'AdresasPastoKodas',
-    'Telefonas', 'ElPastas', 'KontaktinisAsmuo',
-    'BankoPavadinimas', 'BankoSaskaita', 'Pastabos'
-];
+// Set meta title
+$view_data['meta_title'] = trans('import_companies_meta_title');
 ?>
-<h2>Importuoti Įmones iš CSV Failo</h2>
+
+<h1><?php echo e(trans('import_companies')); ?></h1> <?php // Reusing existing key ?>
 
 <?php if (!empty($errors['general'])): ?>
-    <div class="alert alert-danger"><?php echo e($errors['general']); ?></div>
+    <div class="alert alert-danger"><?php echo e($errors['general']); ?></div> <?php // Translate in index.php ?>
 <?php endif; ?>
+
+<form action="<?php echo url('companies', 'import'); ?>" method="POST" enctype="multipart/form-data" class="import-form">
+    <div class="form-group">
+        <label for="csv_file"><?php echo e(trans('select_csv_file_label')); ?></label>
+        <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+        <small><?php echo e(trans('csv_file_requirements')); ?></small><br>
+        <small><?php echo e(trans('csv_column_requirements')); ?></small>
+        <?php /* <br><a href="/path/to/template.csv" download><?php echo e(trans('download_csv_template_link_text')); ?></a> */ ?>
+        <?php // Actual link to CSV template TBD if needed ?>
+    </div>
+
+    <button type="submit" class="button button-primary"><?php echo e(trans('upload_and_import_button')); ?></button>
+</form>
 
 <?php if ($import_results): ?>
-    <div class="alert alert-<?php echo $import_results['success_count'] > 0 && $import_results['error_count'] == 0 ? 'success' : ($import_results['error_count'] > 0 ? 'danger' : 'info'); ?>">
-        <p>Importavimo rezultatai:</p>
-        <ul>
-            <li>Sėkmingai importuota: <?php echo $import_results['success_count']; ?> įmonių.</li>
-            <li>Klaidų importuojant: <?php echo $import_results['error_count']; ?>.</li>
-            <?php if (!empty($import_results['error_details'])): ?>
-                <li>Klaidų detalės:
-                    <ul>
+    <div class="import-results-section">
+        <h2><?php echo e(trans('import_results_title')); ?></h2>
+        <p><?php echo e(trans('successfully_imported_count', ['count' => $import_results['success_count']])); ?></p>
+        <?php if ($import_results['error_count'] > 0): ?>
+            <p><?php echo e(trans('import_errors_count', ['count' => $import_results['error_count']])); ?></p>
+            <h3><?php echo e(trans('import_error_details_title')); ?></h3>
+            <div class="table-responsive">
+                <table class="data-table import-errors-table">
+                    <thead>
+                        <tr>
+                            <th><?php echo e(trans('row_number')); ?></th>
+                            <th><?php echo e(trans('error_message')); ?></th>
+                            <th><?php echo e(trans('original_data')); ?></th>
+                        </tr>
+                    </thead>
+                    <tbody>
                         <?php foreach ($import_results['error_details'] as $error_detail): ?>
-                            <li>Eilutė <?php echo e($error_detail['row']); ?>: <?php echo e($error_detail['message']); ?> (Duomenys: <?php echo e(implode(', ', array_slice($error_detail['data'], 0, 3))); ?>...)</li>
+                            <tr>
+                                <td><?php echo e($error_detail['row']); ?></td>
+                                <td><?php echo e($error_detail['message']); ?></td> <?php // Error messages from index.php, translate there ?>
+                                <td><?php echo e(implode(', ', array_map('htmlspecialchars', (array)$error_detail['data']))); ?></td>
+                            </tr>
                         <?php endforeach; ?>
-                    </ul>
-                </li>
-            <?php endif; ?>
-        </ul>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
     </div>
 <?php endif; ?>
-
-<form action="index.php?page=companies&action=import" method="POST" enctype="multipart/form-data">
-    <div class="form-group">
-        <label for="csv_file">Pasirinkite CSV failą importavimui:</label>
-        <input type="file" name="csv_file" id="csv_file" accept=".csv" required>
-        <small>CSV failas turi turėti šiuos stulpelius (pirma eilutė - antraštės): <?php echo implode(', ', $expected_csv_headers); ?>. Logotipai nebus importuojami.</small>
-    </div>
-    <button type="submit" class="button button-primary">Importuoti</button>
-    <a href="index.php?page=companies" class="button button-secondary">Atšaukti</a>
-</form>

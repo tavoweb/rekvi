@@ -1,14 +1,12 @@
-<?php
-// templates/layout/footer.php
-?>
-        </div> <!-- .content-inner -->
-    </div> <!-- .main-content -->
-</div> <!-- .page-wrapper -->
+<?php // templates/layout/footer.php ?>
+            </div> <?php // Closing .content-inner from header.php ?>
+        </div> <?php // Closing .main-content from header.php ?>
+    </div> <?php // Closing .page-wrapper from header.php ?>
 
-<footer>
-    <p>&copy; <?php echo date('Y'); ?> Rekvizitų Valdymo Sistema. <?php echo "Šiuo metu yra: " . date("Y-m-d H:i:s"); ?> (EEST)</p>
-    <p>Viso įmonių sistemoje: <?php echo $view_data['total_companies'] ?? 0; ?>.</p>
-</footer>
-<script src="/js/script.js"></script>
+    <footer class="site-footer">
+        <p><?php echo trans('copyright_text', ['year' => date('Y')]); ?></p>
+    </footer>
+
+    <script src="/js/script.js"></script> <?php // Root-relative path for JS ?>
 </body>
 </html>

@@ -1,35 +1,55 @@
 <?php
 // templates/auth/register_form.php
-$errors = $view_data['errors'] ?? [];
 $form_values = $view_data['form_values'] ?? ['username' => '', 'email' => ''];
+$errors = $view_data['errors'] ?? [];
+
+// Set meta title for register page
+$view_data['meta_title'] = trans('register_meta_title');
 ?>
-<div class="auth-form">
-    <h2>Registracija</h2>
+<div class="form-container auth-form">
+    <h1><?php echo e(trans('register_page_title')); ?></h1>
+
     <?php if (!empty($errors['general'])): ?>
-        <div class="alert alert-danger"><?php echo e($errors['general']); ?></div>
+        <div class="alert alert-danger"><?php echo e($errors['general']); ?></div> <?php // This error comes from Auth.php/index.php, translate there ?>
     <?php endif; ?>
-    <form action="<?php echo url('register'); ?>" method="POST" novalidate>
+
+    <form action="<?php echo url('register'); ?>" method="POST">
         <div class="form-group">
-            <label for="username">Vartotojo vardas:</label>
-            <input type="text" name="username" id="username" class="<?php echo isset($errors['username']) ? 'is-invalid' : ''; ?>" value="<?php echo e($form_values['username']); ?>" required>
-            <?php if (isset($errors['username'])): ?><div class="form-error"><?php echo e($errors['username']); ?></div><?php endif; ?>
+            <label for="username"><?php echo e(trans('username_label')); ?>:</label>
+            <input type="text" id="username" name="username" value="<?php echo e($form_values['username']); ?>" required>
+            <?php if (!empty($errors['username'])): ?>
+                <div class="field-error-message"><?php echo e($errors['username']); ?></div> <?php // Translate in Auth.php/index.php ?>
+            <?php endif; ?>
         </div>
+
         <div class="form-group">
-            <label for="email">El. paštas:</label>
-            <input type="email" name="email" id="email" class="<?php echo isset($errors['email']) ? 'is-invalid' : ''; ?>" value="<?php echo e($form_values['email']); ?>" required>
-            <?php if (isset($errors['email'])): ?><div class="form-error"><?php echo e($errors['email']); ?></div><?php endif; ?>
+            <label for="email"><?php echo e(trans('email_label')); ?>:</label>
+            <input type="email" id="email" name="email" value="<?php echo e($form_values['email']); ?>" required>
+            <?php if (!empty($errors['email'])): ?>
+                <div class="field-error-message"><?php echo e($errors['email']); ?></div> <?php // Translate in Auth.php/index.php ?>
+            <?php endif; ?>
         </div>
+
         <div class="form-group">
-            <label for="password">Slaptažodis (min. 8 simboliai):</label>
-            <input type="password" name="password" id="password" class="<?php echo isset($errors['password']) ? 'is-invalid' : ''; ?>" required>
-            <?php if (isset($errors['password'])): ?><div class="form-error"><?php echo e($errors['password']); ?></div><?php endif; ?>
+            <label for="password"><?php echo e(trans('password_label')); ?>:</label>
+            <input type="password" id="password" name="password" required>
+            <?php if (!empty($errors['password'])): ?>
+                <div class="field-error-message"><?php echo e($errors['password']); ?></div> <?php // Translate in Auth.php/index.php ?>
+            <?php endif; ?>
         </div>
+
         <div class="form-group">
-            <label for="confirm_password">Pakartokite slaptažodį:</label>
-            <input type="password" name="confirm_password" id="confirm_password" class="<?php echo isset($errors['confirm_password']) ? 'is-invalid' : ''; ?>" required>
-            <?php if (isset($errors['confirm_password'])): ?><div class="form-error"><?php echo e($errors['confirm_password']); ?></div><?php endif; ?>
+            <label for="confirm_password"><?php echo e(trans('confirm_password_label')); ?>:</label>
+            <input type="password" id="confirm_password" name="confirm_password" required>
+            <?php if (!empty($errors['confirm_password'])): ?>
+                <div class="field-error-message"><?php echo e($errors['confirm_password']); ?></div> <?php // Translate in Auth.php/index.php ?>
+            <?php endif; ?>
         </div>
-        <button type="submit" class="button button-primary full-width">Registruotis</button>
+
+        <button type="submit" class="button button-primary"><?php echo e(trans('register_button')); ?></button>
     </form>
-    <p>Jau turite paskyrą? <a href="<?php echo url('login'); ?>">Prisijunkite čia</a>.</p>
+    <p class="auth-switch-prompt">
+        <?php echo e(trans('already_have_account')); ?>
+        <a href="<?php echo url('login'); ?>"><?php echo e(trans('login_link_text')); ?></a>
+    </p>
 </div>
