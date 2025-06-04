@@ -1,8 +1,7 @@
 <?php
-
 // src/classes/Auth.php
 
-declare(strict_types=1); // Griežtas tipų tikrinimas
+declare(strict_types=1);
 
 class Auth
 {
@@ -22,41 +21,41 @@ class Auth
         $email = trim($email);
 
         if (empty($username)) {
-            $errors['username'] = 'Vartotojo vardas yra privalomas.';
+            $errors['username'] = ['key' => 'auth_username_required'];
         } elseif (strlen($username) < 3 || strlen($username) > 50) {
-            $errors['username'] = 'Vartotojo vardas turi būti nuo 3 iki 50 simbolių ilgio.';
+            $errors['username'] = ['key' => 'auth_username_length', 'params' => ['min' => 3, 'max' => 50]];
         } elseif (!preg_match('/^[a-zA-Z0-9_]+$/', $username)) {
-            $errors['username'] = 'Vartotojo vardas gali turėti tik raides (a-z, A-Z), skaičius (0-9) ir apatinį brūkšnį (_).';
+            $errors['username'] = ['key' => 'auth_username_format'];
         } else {
             $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE vartotojo_vardas = :username");
             $this->db->bind(':username', $username);
             if ($this->db->single()) {
-                $errors['username'] = 'Toks vartotojo vardas jau užimtas.';
+                $errors['username'] = ['key' => 'auth_username_taken'];
             }
         }
 
         if (empty($email)) {
-            $errors['email'] = 'El. paštas yra privalomas.';
+            $errors['email'] = ['key' => 'auth_email_required'];
         } elseif (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = 'Neteisingas el. pašto formatas.';
+            $errors['email'] = ['key' => 'auth_email_invalid'];
         } else {
             $this->db->query("SELECT id FROM " . $this->usersTable . " WHERE el_pastas = :email");
             $this->db->bind(':email', $email);
             if ($this->db->single()) {
-                $errors['email'] = 'Šis el. paštas jau registruotas.';
+                $errors['email'] = ['key' => 'auth_email_taken'];
             }
         }
 
         if (empty($password)) {
-            $errors['password'] = 'Slaptažodis yra privalomas.';
+            $errors['password'] = ['key' => 'auth_password_required'];
         } elseif (strlen($password) < 8) {
-            $errors['password'] = 'Slaptažodis turi būti bent 8 simbolių ilgio.';
+            $errors['password'] = ['key' => 'auth_password_min_length', 'params' => ['length' => 8]];
         }
 
         if (empty($confirmPassword)) {
-            $errors['confirm_password'] = 'Pakartokite slaptažodį.';
+            $errors['confirm_password'] = ['key' => 'auth_confirm_password_required'];
         } elseif ($password !== $confirmPassword) {
-            $errors['confirm_password'] = 'Slaptažodžiai nesutampa.';
+            $errors['confirm_password'] = ['key' => 'auth_passwords_do_not_match'];
         }
 
         if (!empty($errors)) {
@@ -65,7 +64,7 @@ class Auth
 
         $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
         if ($hashedPassword === false) {
-            return ['success' => false, 'errors' => ['general' => 'Nepavyko užkoduoti slaptažodžio.']];
+            return ['success' => false, 'errors' => ['general' => ['key' => 'auth_password_hash_failed']]];
         }
 
         try {
@@ -76,13 +75,15 @@ class Auth
             $this->db->bind(':role', 'vartotojas');
 
             if ($this->db->execute()) {
-                return ['success' => true, 'message' => 'Vartotojas sėkmingai užregistruotas. Galite prisijungti.'];
+                // 'user_registered_successfully' was already in lang files, used by index.php directly
+                // Now Auth.php provides the key for consistency.
+                return ['success' => true, 'message_key' => 'auth_registration_success_message_key'];
             } else {
-                return ['success' => false, 'errors' => ['general' => 'Registracija nepavyko. Bandykite vėliau.']];
+                return ['success' => false, 'errors' => ['general' => ['key' => 'auth_registration_failed_generic']]];
             }
         } catch (PDOException $e) {
             error_log("PDOException in registerUser: " . $e->getMessage());
-            return ['success' => false, 'errors' => ['general' => 'Sistemos klaida registruojant vartotoją.']];
+            return ['success' => false, 'errors' => ['general' => ['key' => 'auth_registration_system_error']]];
         }
     }
 
@@ -128,22 +129,18 @@ class Auth
     public function requireLogin(string $redirectPage = 'login', ?string $redirectAction = null, ?int $redirectId = null): void
     {
         if (!$this->isLoggedIn()) {
-            if (function_exists('set_flash_message')) {
-                set_flash_message('error_message', "Norėdami pasiekti šį puslapį, turite prisijungti.");
-            } else {
-                $_SESSION['error_message'] = "Norėdami pasiekti šį puslapį, turite prisijungti.";
-            }
+            // Assuming trans() is available globally after index.php loads helpers.
+            // If Auth is instantiated before helpers, this could be an issue.
+            // However, set_flash_message is a helper, implying trans() should also be fine.
+            set_flash_message('error_message', trans('auth_login_required'));
 
             if (function_exists('redirect')) {
                 redirect($redirectPage, $redirectAction, $redirectId);
-            } else {
-                if ($redirectAction === null) {
-                    header('Location: /' . $redirectPage);
-                } elseif ($redirectId === null) {
-                    header('Location: /' . $redirectPage . '/' . $redirectAction);
-                } else {
-                    header('Location: /' . $redirectPage . '/' . $redirectAction . '/' . $redirectId);
-                }
+            } else { // Fallback if redirect helper not available (should not happen in this app)
+                $location = '/' . $redirectPage;
+                if ($redirectAction) $location .= '/' . $redirectAction;
+                if ($redirectId) $location .= '/' . $redirectId;
+                header('Location: ' . $location);
                 exit;
             }
         }
@@ -157,23 +154,15 @@ class Auth
         }
 
         if (!isset($_SESSION['user_role']) || $_SESSION['user_role'] !== 'administratorius') {
-            $errorMessage = "Neturite teisių pasiekti šį resursą. Kreipkitės į administratorių.";
-            if (function_exists('set_flash_message')) {
-                set_flash_message('error_message', $errorMessage);
-            } else {
-                $_SESSION['error_message'] = $errorMessage;
-            }
+             set_flash_message('error_message', trans('auth_admin_required'));
 
             if (function_exists('redirect')) {
                 redirect($defaultRedirectPage, $defaultRedirectAction, $defaultRedirectId);
-            } else {
-                if ($defaultRedirectAction === null) {
-                    header('Location: /' . $defaultRedirectPage);
-                } elseif ($defaultRedirectId === null) {
-                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction);
-                } else {
-                    header('Location: /' . $defaultRedirectPage . '/' . $defaultRedirectAction . '/' . $defaultRedirectId);
-                }
+            } else { // Fallback
+                $location = '/' . $defaultRedirectPage;
+                if ($defaultRedirectAction) $location .= '/' . $defaultRedirectAction;
+                if ($defaultRedirectId) $location .= '/' . $defaultRedirectId;
+                header('Location: ' . $location);
                 exit;
             }
         }
@@ -199,17 +188,9 @@ class Auth
         return $this->isLoggedIn() && $this->getCurrentUserRole() === 'administratorius';
     }
 
-    /**
-     * Gauna visus registruotus vartotojus.
-     * Tik administratoriai turėtų kviesti šią funkciją.
-     * @return array Vartotojų sąrašas.
-     */
     public function getAllUsers(): array
     {
-        // Ensure this query selects all necessary fields, including registration_date if available
-        // Using 'sukurimo_data' and aliasing as 'registracijos_data' for compatibility.
-        // If not, adjust the query. Add other fields if needed.
-        $this->db->query("SELECT id, vartotojo_vardas, el_pastas, role, sukurimo_data AS registracijos_data FROM " . $this->usersTable . " ORDER BY id ASC");
+        $this->db->query("SELECT id, vartotojo_vardas, el_pastas, role, sukurimo_data AS created_at FROM " . $this->usersTable . " ORDER BY id ASC");
         return $this->db->resultSet();
     }
 }

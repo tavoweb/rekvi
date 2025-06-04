@@ -1,18 +1,12 @@
 <?php
 // templates/companies/view.php
 $company = $view_data['company'] ?? null;
-$auth = $view_data['auth']; // Assuming auth is always passed
+$auth = $view_data['auth'];
 
 if (!$company) {
-    // This case should ideally be handled by redirect in index.php if company not found
-    // but as a fallback:
-    echo "<p>" . e(trans('no_companies_found')) . "</p>"; // Or a more specific error
-    return; // Stop further rendering
+    echo "<p>" . e(trans('no_companies_found')) . "</p>";
+    return;
 }
-
-// Meta title is set in index.php: e($company['pavadinimas']) . ' - Rekvizitai';
-// This will be handled in Step 6 (PHP Logic Refactoring)
-// $view_data['meta_title'] = e($company['pavadinimas']) . ' - ' . trans('company_details_suffix');
 ?>
 
 <div class="company-view-container">
@@ -47,7 +41,7 @@ if (!$company) {
                 if (!empty($company['adresas_miestas'])) $address_parts[] = e($company['adresas_miestas']);
                 if (!empty($company['adresas_pasto_kodas'])) $address_parts[] = e($company['adresas_pasto_kodas']);
                 if (!empty($company['adresas_salis'])) $address_parts[] = e($company['adresas_salis']);
-                echo implode(', ', $address_parts ?: [e(trans('not_specified'))]); // Assuming 'not_specified' key if needed
+                echo implode(', ', $address_parts ?: [e(trans('not_specified'))]);
                 ?>
             </dd>
 
@@ -67,7 +61,7 @@ if (!$company) {
             <?php endif; ?>
 
             <?php if (!empty($company['vadovas_vardas_pavarde'])): ?>
-                <dt><?php echo e(trans('label_contact_person')); ?></dt> <?php // Assuming 'vadovas' is the main contact person for this label ?>
+                <dt><?php echo e(trans('label_contact_person')); ?></dt>
                 <dd><?php echo e($company['vadovas_vardas_pavarde']); ?></dd>
             <?php endif; ?>
 
@@ -94,13 +88,16 @@ if (!$company) {
     </div>
 
     <div class="company-view-actions">
-        <a href="<?php echo url('companies'); ?>" class="button button-outline"><?php echo e(trans('back_to_company_list_button')); ?></a>
+        <a href="<?php echo url('companies'); ?>" class="button button-outline">
+            <span class="material-icons">arrow_back</span> <?php echo e(trans('back_to_company_list_button')); ?>
+        </a>
         <?php if ($auth->isAdmin()): ?>
-            <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button"><?php echo e(trans('edit_company_button')); ?></a>
-            <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-danger"><?php echo e(trans('delete_company_button')); ?></a>
+            <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button">
+                <span class="material-icons">edit</span> <?php echo e(trans('edit_company_button')); ?>
+            </a>
+            <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-danger">
+                <span class="material-icons">delete</span> <?php echo e(trans('delete_company_button')); ?>
+            </a>
         <?php endif; ?>
     </div>
 </div>
-<?php
-// ensure_http_prefix() function moved to src/helpers.php
-?>

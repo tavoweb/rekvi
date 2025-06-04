@@ -94,7 +94,7 @@ function url(string $page, ?string $action = null, ?int $id = null, array $param
  *
  * @param array $file_input Duomenys iš $_FILES superglobalaus masyvo.
  * @param string|null $current_logo_filename Esamo logotipo failo vardas (jei yra, bus ištrintas sėkmingo naujo įkėlimo atveju).
- * @return array Rezultatas: ['success' => bool, 'filename' => ?string, 'error' => ?string]
+ * @return array Rezultatas: ['success' => bool, 'filename' => ?string, 'error_key' => ?string, 'error_params' => ?array]
  *               'filename' yra naujo failo vardas sėkmės atveju, arba $current_logo_filename jei nieko neįkelta/klaida.
  */
 function handle_logo_upload(array $file_input, ?string $current_logo_filename = null): array
@@ -103,7 +103,7 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
         $filename = $file_input['name'];
         $temp_path = $file_input['tmp_name'];
         $filesize = $file_input['size'];
-        $file_type = $file_input['type']; // Gautas iš naršyklės, gali būti nepatikimas
+        // $file_type = $file_input['type']; // Gautas iš naršyklės, gali būti nepatikimas
 
         $allowed_mime_types = ['image/jpeg', 'image/png', 'image/gif'];
         $allowed_extensions = ['jpg', 'jpeg', 'png', 'gif'];
@@ -111,15 +111,30 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
 
         $actual_mime_type = mime_content_type($temp_path);
         if (!in_array(strtolower($actual_mime_type), $allowed_mime_types, true)) {
-            return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo tipas. Leidžiama JPG, PNG, GIF.'];
+            return [
+                'success' => false,
+                'filename' => $current_logo_filename,
+                'error_key' => 'logo_err_invalid_type',
+                'error_params' => ['types' => implode(', ', $allowed_extensions)] // Rodyti plėtinius, nes mime tipai nėra labai user-friendly
+            ];
         }
         if ($filesize > $max_filesize) {
-            return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Failas per didelis. Maksimalus dydis 2MB.'];
+            return [
+                'success' => false,
+                'filename' => $current_logo_filename,
+                'error_key' => 'logo_err_too_large',
+                'error_params' => ['size' => ($max_filesize / 1024 / 1024) . 'MB']
+            ];
         }
 
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
         if (!in_array($extension, $allowed_extensions, true)) {
-            return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Netinkamas failo plėtinys. Leidžiama JPG, JPEG, PNG, GIF.'];
+            return [
+                'success' => false,
+                'filename' => $current_logo_filename,
+                'error_key' => 'logo_err_invalid_extension',
+                'error_params' => ['extensions' => implode(', ', $allowed_extensions)]
+            ];
         }
 
         $new_filename = uniqid('logo_', true) . '.' . $extension;
@@ -129,14 +144,20 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
             if ($current_logo_filename && file_exists(LOGO_UPLOAD_PATH . $current_logo_filename)) {
                 @unlink(LOGO_UPLOAD_PATH . $current_logo_filename);
             }
-            return ['success' => true, 'filename' => $new_filename, 'error' => null];
+            return ['success' => true, 'filename' => $new_filename, 'error_key' => null, 'error_params' => null];
         } else {
-            return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Klaida įkeliant failą į serverį.'];
+            return ['success' => false, 'filename' => $current_logo_filename, 'error_key' => 'logo_err_upload_failed'];
         }
     } elseif (isset($file_input['error']) && $file_input['error'] !== UPLOAD_ERR_NO_FILE) {
-        return ['success' => false, 'filename' => $current_logo_filename, 'error' => 'Failo įkėlimo klaida. Kodas: ' . $file_input['error']];
+        return [
+            'success' => false,
+            'filename' => $current_logo_filename,
+            'error_key' => 'logo_err_upload_error_code',
+            'error_params' => ['code' => $file_input['error']]
+        ];
     }
-    return ['success' => true, 'filename' => $current_logo_filename, 'error' => null]; // Nebuvo bandoma įkelti naujo failo
+    // Nebuvo bandoma įkelti naujo failo arba failas nepasirinktas (UPLOAD_ERR_NO_FILE)
+    return ['success' => true, 'filename' => $current_logo_filename, 'error_key' => null, 'error_params' => null];
 }
 
 /**
