@@ -25,22 +25,31 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
 <!-- Overlay for mobile menu -->
 <div class="sidebar-overlay"></div>
 
-<!-- Mobile Top Bar -->
-<div class="mobile-topbar">
-    <a href="<?php echo url('home'); ?>" class="mobile-brand"><?php echo e(trans('main_site_brand')); ?></a>
-    <md-icon-button id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
-        <md-icon>menu</md-icon>
-    </md-icon-button>
+<!-- MD3 Top App Bar -->
+<div class="md3-top-app-bar">
+    <div class="leading-icon">
+        <md-icon-button id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
+            <md-icon>menu</md-icon>
+        </md-icon-button>
+    </div>
+    <a href="<?php echo url('home'); ?>" class="headline"><?php echo e(trans('main_site_brand')); ?></a>
+    <div class="trailing-icons">
+        <md-icon-button id="overflowMenuButton" aria-label="More options">
+            <md-icon>more_vert</md-icon>
+        </md-icon-button>
+        <md-menu id="overflowMenu" anchor="overflowMenuButton">
+            <md-menu-item headline="Option 1 (Placeholder)"></md-menu-item>
+            <md-menu-item headline="Option 2 (Placeholder)"></md-menu-item>
+            <?php if ($auth->isLoggedIn()): ?>
+                <md-divider role="separator"></md-divider>
+                <md-menu-item headline="<?php echo e(trans('logout')); ?>" href="<?php echo url('logout'); ?>"></md-menu-item>
+            <?php endif; ?>
+        </md-menu>
+    </div>
 </div>
 
 <div class="page-wrapper">
     <aside class="sidebar">
-        <div class="sidebar-header">
-            <a href="<?php echo url('home'); ?>" class="sidebar-brand-link"><?php echo e(trans('main_site_brand')); ?></a>
-            <md-icon-button id="sidebarToggleDesktop" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
-                <md-icon>menu</md-icon>
-            </md-icon-button>
-        </div>
         <div class="sidebar-search">
             <form action="<?php echo url('companies'); ?>" method="GET" style="width: 100%;">
                 <md-outlined-text-field
