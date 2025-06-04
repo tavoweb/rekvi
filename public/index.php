@@ -391,36 +391,77 @@ switch ($page) {
                 break;
 
             case 'load_more_companies':
+                // Store current error reporting levels
+                $original_error_reporting = error_reporting();
+                $original_display_errors = ini_get('display_errors');
+
+                // Disable direct error output, keep logging enabled
+                error_reporting(E_ALL); // Report all errors for logging
+                ini_set('display_errors', '0'); // Do not display errors in output
+
+                // Start output buffering
+                ob_start();
+
                 header('Content-Type: application/json');
-                if (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'Invalid request method. This endpoint is for AJAX requests only.']);
-                    exit;
-                }
-                $requested_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-                if ($requested_page <= 0) {
-                    http_response_code(400);
-                    echo json_encode(['error' => 'Invalid page number.']);
-                    exit;
-                }
-                $search_query_ajax = $_GET['search_query'] ?? null;
-                $companies_per_page = 100; 
+
                 $response_data = [
                     'companies' => [],
-                    'isAdmin' => $auth->isAdmin(),
+                    'isAdmin' => false,
                     'logos_dir_url' => LOGO_UPLOAD_DIR_PUBLIC,
-                    'search_query_active' => $search_query_ajax,
-                    'page' => $requested_page
+                    'search_query_active' => null,
+                    'page' => 0,
+                    'text_view' => trans('view_action'), // NAUJAS
+                    'text_edit' => trans('edit_action'), // NAUJAS
+                    'text_delete' => trans('delete_action') // NAUJAS
                 ];
+
                 try {
-                    $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
-                    $response_data['companies'] = $companies;
+                    if (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') {
+                        http_response_code(400);
+                        $response_data['error'] = 'Invalid request method. This endpoint is for AJAX requests only.';
+                        // No exit here yet, let it go through json_encode and buffer clearing
+                    } elseif (!isset($_GET['page']) || (int)$_GET['page'] <= 0) {
+                        http_response_code(400);
+                        $response_data['error'] = 'Invalid page number.';
+                    } else {
+                        $requested_page = (int)$_GET['page'];
+                        $search_query_ajax = $_GET['search_query'] ?? null;
+                        $companies_per_page = 100; // Consider making this a constant or configurable
+
+                        // Re-instantiate $auth if not available in this specific scope
+                        // This depends on how $auth is scoped in the original full index.php
+                        // Assuming $auth is available from the outer scope of index.php
+                        if (!isset($auth)) {
+                             // This is a fallback, ideally $auth is already initialized and available.
+                             // If $db is also not available here, this will fail.
+                             // This indicates a larger structural issue if $auth and $db are not accessible.
+                             // For now, we assume $auth is available.
+                             // $auth = new Auth($db); // Only if $db is also available
+                        }
+                        $response_data['isAdmin'] = isset($auth) ? $auth->isAdmin() : false;
+                        $response_data['search_query_active'] = $search_query_ajax;
+                        $response_data['page'] = $requested_page;
+
+                        $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
+                        $response_data['companies'] = $companies;
+                    }
                 } catch (Exception $e) {
                     error_log("Error in load_more_companies: " . $e->getMessage());
                     http_response_code(500);
-                    echo json_encode(['error' => 'An error occurred while fetching company data.']);
-                    exit;
+                    $response_data['error'] = 'An error occurred while fetching company data.';
+                    $response_data['companies'] = []; // Ensure companies is an array in error case
                 }
+
+                // Clean the buffer (discard any stray output/errors)
+                $stray_output = ob_get_clean();
+                if (!empty($stray_output) && !headers_sent()) { // Log if there was unexpected output
+                    error_log("Stray output detected in load_more_companies: " . $stray_output);
+                }
+
+                // Restore original error reporting
+                ini_set('display_errors', $original_display_errors);
+                error_reporting($original_error_reporting);
+
                 echo json_encode($response_data);
                 exit;
 

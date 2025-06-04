@@ -1,7 +1,6 @@
 <?php
 // languages/lt.php
 return [
-    // ... (all existing translations)
     'site_title' => 'Rekvizitų Valdymo Sistema',
     'meta_description_default' => 'Patogi įmonių rekvizitų paieškos ir valdymo sistema.',
     'search_placeholder' => 'Ieškoti įmonės...',
@@ -159,7 +158,6 @@ return [
     'invalid_delete_request' => 'Neteisinga užklausa trynimui.',
     'company_code_exists' => 'Įmonė su tokiu įmonės kodu jau egzistuoja.',
     'name_and_code_required' => 'Pavadinimas ir įmonės kodas yra privalomi.',
-    'user_registered_successfully' => 'Vartotojas sėkmingai užregistruotas. Prašome prisijungti.',
     'company_meta_title_suffix_rekvizitai' => 'Rekvizitai',
     'company_meta_description_prefix' => 'Įmonės {name} rekvizitai.',
     'company_meta_description_address_street' => '{street}',
@@ -190,8 +188,7 @@ return [
     'auth_login_required' => 'Norėdami pasiekti šį puslapį, turite prisijungti.',
     'auth_admin_required' => 'Neturite teisių pasiekti šį resursą. Kreipkitės į administratorių.',
     'auth_registration_success_message_key' => 'user_registered_successfully',
-
-    // Raktai handle_logo_upload() klaidoms
+    'user_registered_successfully' => 'Vartotojas sėkmingai užregistruotas. Prašome prisijungti.',
     'logo_err_invalid_type' => 'Netinkamas failo tipas. Leidžiama {types}.',
     'logo_err_too_large' => 'Failas per didelis. Maksimalus dydis {size}.',
     'logo_err_invalid_extension' => 'Netinkamas failo plėtinys. Leidžiama {extensions}.',

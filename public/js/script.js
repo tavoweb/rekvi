@@ -174,7 +174,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Construct URL relative to the domain root.
                 // Assumes SITE_BASE_URL is not needed here if paths are correctly handled by server routing.
                 // If your AJAX URLs are absolute, you might need to pass SITE_BASE_URL to JS.
-                let ajaxUrl = `companies/load_more_companies?ajax=1&page=${nextPage}`;
+                let ajaxUrl = `/companies/load_more_companies?ajax=1&page=${nextPage}`; // Changed: added / at the beginning
                 if (searchQuery) {
                     ajaxUrl += `&search_query=${encodeURIComponent(searchQuery)}`;
                 }
@@ -215,19 +215,24 @@ document.addEventListener('DOMContentLoaded', function() {
                         // URLs for actions should be generated carefully.
                         // Assuming url() PHP helper structure for consistency.
                         // These might need to be built relative to a base path if not absolute.
-                        let viewUrl = `companies/view/${company.id}`;
-                        let editUrl = `companies/edit/${company.id}`;
-                        let deleteUrl = `companies/delete/${company.id}`;
+                        let viewUrl = `/companies/view/${company.id}`; // Changed: added /
+                        let editUrl = `/companies/edit/${company.id}`; // Changed: added /
+                        let deleteUrl = `/companies/delete/${company.id}`; // Changed: added /
 
                         // For dynamic translated text in JS, it's best to get these from data attributes or pre-loaded JS vars.
                         // Here, using hardcoded English as placeholders, assuming `trans()` calls won't work directly in JS.
                         // A better approach would be to have these action links fully formed in the JSON response if they need to be dynamic per language.
                         // Or, pass `view_action_text`, `edit_action_text`, `delete_action_text` in `data` from PHP.
                         // For now, this is a simplification.
-                        let actionsHTML = `<a href="${viewUrl}" class="button button-small button-outline">View</a>`; // Placeholder text
+                        // NAUJAS: Naudoti išverstus tekstus iš data objekto
+                        const textView = data.text_view || 'View'; // Fallback
+                        const textEdit = data.text_edit || 'Edit'; // Fallback
+                        const textDelete = data.text_delete || 'Delete'; // Fallback
+
+                        let actionsHTML = `<a href="${viewUrl}" class="button button-small button-outline">${textView}</a>`;
                         if (data.isAdmin) {
-                            actionsHTML += ` <a href="${editUrl}" class="button button-small">Edit</a>`; // Placeholder text
-                            actionsHTML += ` <a href="${deleteUrl}" class="button button-small button-danger">Delete</a>`; // Placeholder text
+                            actionsHTML += ` <a href="${editUrl}" class="button button-small">${textEdit}</a>`;
+                            actionsHTML += ` <a href="${deleteUrl}" class="button button-small button-danger">${textDelete}</a>`;
                         }
                         actionsCell.innerHTML = actionsHTML;
                     });
@@ -235,7 +240,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     this.disabled = false;
                     this.textContent = originalButtonText;
                 } else {
-                    this.textContent = 'No more companies'; // Hardcoded for now
+                    this.textContent = data.no_more_companies_text || 'No more companies'; // Taip pat galima perduoti iš PHP
                     this.disabled = true;
                 }
             } catch (error) {
