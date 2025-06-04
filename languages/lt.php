@@ -195,4 +195,14 @@ return [
     'logo_err_upload_failed' => 'Klaida įkeliant failą į serverį.',
     'logo_err_upload_error_code' => 'Failo įkėlimo klaida. Kodas: {code}.',
     'logo_upload_error_generic' => 'Klaida įkeliant logotipą.',
+
+    // Added in style/icon consistency review
+    'search_companies_section_title' => 'Įmonių Paieška',
+    'search_button_label' => 'Ieškoti',
+    // 'go_to_admin_panel_button' => 'Eiti į Administravimo Panelę', // Already exists
+    // 'login_page_title' => 'Prisijungimas', // Already exists
+    'login_page_heading' => 'Prisijunkite prie Savo Paskyros',
+    // 'username_or_email_label' => 'Vartotojo vardas arba El. paštas', // Already exists
+    // 'password_label' => 'Slaptažodis', // Already exists
+    'login_button_label' => 'Prisijungti', // Differentiating from 'login_button' if used elsewhere for just "Login" text
 ];
