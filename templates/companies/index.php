@@ -47,11 +47,17 @@ $view_data['meta_title'] = trans('companies_index_meta_title');
                             echo e(implode(', ', $address_parts));
                             ?>
                         </td>
-                        <td class="actions-cell">
-                            <a href="<?php echo url('companies', 'view', $company['id']); ?>" class="button button-small button-outline"><?php echo e(trans('view_action')); ?></a>
+                        <td class="actions-cell" style="display: flex; align-items: center; gap: 8px;">
+                            <md-outlined-button href="<?php echo url('companies', 'view', $company['id']); ?>">
+                                <?php echo e(trans('view_action')); ?>
+                            </md-outlined-button>
                             <?php if ($auth->isAdmin()): ?>
-                                <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button button-small"><?php echo e(trans('edit_action')); ?></a>
-                                <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-small button-danger"><?php echo e(trans('delete_action')); ?></a>
+                                <md-text-button href="<?php echo url('companies', 'edit', $company['id']); ?>">
+                                    <?php echo e(trans('edit_action')); ?>
+                                </md-text-button>
+                                <md-filled-button href="<?php echo url('companies', 'delete', $company['id']); ?>" style="--md-filled-button-container-color: var(--md-sys-color-error); --md-filled-button-label-text-color: var(--md-sys-color-on-error);">
+                                    <?php echo e(trans('delete_action')); ?>
+                                </md-filled-button>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -59,5 +65,7 @@ $view_data['meta_title'] = trans('companies_index_meta_title');
             </tbody>
         </table>
     </div>
-    <button id="load-more-companies" class="button" data-page="1" data-search-query="<?php echo e($search_query_active ?? ''); ?>"><?php echo e(trans('load_more_companies_button')); ?></button>
+    <md-filled-button id="load-more-companies" data-page="1" data-search-query="<?php echo e($search_query_active ?? ''); ?>">
+        <?php echo e(trans('load_more_companies_button')); ?>
+    </md-filled-button>
 <?php endif; ?>

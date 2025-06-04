@@ -16,7 +16,20 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
     <title><?php echo isset($view_data['meta_title']) ? e($view_data['meta_title']) : e(trans('site_title')); ?></title>
     <meta name="description" content="<?php echo isset($view_data['meta_description']) ? e($view_data['meta_description']) : e(trans('meta_description_default')); ?>">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css"> <?php // Root-relative path ensures CSS loads on all pages ?>
+    <script type="importmap">
+      {
+        "imports": {
+          "@material/web/": "https://esm.run/@material/web/"
+        }
+      }
+    </script>
+    <script type="module">
+      import '@material/web/all.js';
+      import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
+      document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
+    </script>
 </head>
 <body>
 <!-- Overlay for mobile menu -->
@@ -39,8 +52,14 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
             </button>
         </div>
         <div class="sidebar-search">
-            <form action="<?php echo url('companies'); ?>" method="GET">
-                <input type="text" name="search_query" id="search-input" placeholder="<?php echo e(trans('search_placeholder')); ?>" value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
+            <form action="<?php echo url('companies'); ?>" method="GET" style="width: 100%;">
+                <md-outlined-text-field
+                    style="width: 100%;"
+                    label="<?php echo e(trans('search_placeholder')); ?>"
+                    name="search_query"
+                    id="search-input"
+                    value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
+                </md-outlined-text-field>
             </form>
             <div id="search-suggestions-container"></div>
         </div>
@@ -64,10 +83,10 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
                     <div class="user-name"><?php echo e($currentUsername); ?></div>
                     <div class="user-role"><?php echo e(trans('user_role_display', ['role' => $currentUserRole])); ?></div>
                 </div>
-                <a href="<?php echo url('logout'); ?>" class="button button-outline button-small"><?php echo e(trans('logout')); ?></a>
+                <md-outlined-button style="width: 100%; margin-top: 5px;" href="<?php echo url('logout'); ?>"><?php echo e(trans('logout')); ?></md-outlined-button>
             <?php else: ?>
-                <a href="<?php echo url('login'); ?>" class="button button-primary button-small <?php echo $currentPage === 'login' ? 'active' : ''; ?>"><?php echo e(trans('login')); ?></a>
-                <a href="<?php echo url('register'); ?>" class="button button-outline button-small <?php echo $currentPage === 'register' ? 'active' : ''; ?>"><?php echo e(trans('register')); ?></a>
+                <md-filled-button style="width: 100%; margin-top: 5px;" href="<?php echo url('login'); ?>"><?php echo e(trans('login')); ?></md-filled-button>
+                <md-outlined-button style="width: 100%; margin-top: 5px;" href="<?php echo url('register'); ?>"><?php echo e(trans('register')); ?></md-outlined-button>
             <?php endif; ?>
         </div>
     </aside>
