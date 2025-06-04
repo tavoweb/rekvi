@@ -1,3 +1,4 @@
+<p><a href="<?php echo url('admin', 'dashboard'); ?>" class="button button-outline">&larr; Atgal į Administratoriaus Skydelį</a></p>
 <?php
 // templates/admin/users_list.php
 /** @var array $view_data */

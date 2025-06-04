@@ -933,3 +933,15 @@ footer p {
 .table-responsive-wrapper table {
     min-width: 100%; /* Or a specific min-width like 600px if tables have a natural minimum size */
 }
+
+/* Add this at the end of your public/css/style.css file */
+
+.sidebar-nav ul li.sidebar-nav-separator {
+    padding: 10px 15px;
+    margin-top: 10px;
+    font-weight: bold;
+    color: #888; /* Or your desired color */
+    background-color: #f0f0f0; /* Optional: a light background for the separator */
+    border-top: 1px solid #ddd; /* Optional: a top border */
+    border-bottom: 1px solid #ddd; /* Optional: a bottom border */
+}
