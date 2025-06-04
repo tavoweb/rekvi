@@ -18,18 +18,8 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css"> <?php // Root-relative path ensures CSS loads on all pages ?>
-    <script type="importmap">
-      {
-        "imports": {
-          "@material/web/": "https://esm.run/@material/web/"
-        }
-      }
-    </script>
-    <script type="module">
-      import '@material/web/all.js';
-      import {styles as typescaleStyles} from '@material/web/typography/md-typescale-styles.js';
-      document.adoptedStyleSheets.push(typescaleStyles.styleSheet);
-    </script>
+    <link rel="stylesheet" href="/css/material-custom.css">
+    <script type="module" src="/js/bundle.js"></script>
 </head>
 <body>
 <!-- Overlay for mobile menu -->
@@ -38,18 +28,18 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
 <!-- Mobile Top Bar -->
 <div class="mobile-topbar">
     <a href="<?php echo url('home'); ?>" class="mobile-brand"><?php echo e(trans('main_site_brand')); ?></a>
-    <button class="sidebar-toggle" id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>"> <?php // Changed id to avoid conflict, if any ?>
-        <span></span><span></span><span></span>
-    </button>
+    <md-icon-button id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
+        <md-icon>menu</md-icon>
+    </md-icon-button>
 </div>
 
 <div class="page-wrapper">
     <aside class="sidebar">
         <div class="sidebar-header">
             <a href="<?php echo url('home'); ?>" class="sidebar-brand-link"><?php echo e(trans('main_site_brand')); ?></a>
-            <button class="sidebar-toggle" id="sidebarToggleDesktop" aria-label="<?php echo e(trans('toggle_navigation')); ?>"> <?php // Changed id to avoid conflict ?>
-                <span></span><span></span><span></span>
-            </button>
+            <md-icon-button id="sidebarToggleDesktop" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
+                <md-icon>menu</md-icon>
+            </md-icon-button>
         </div>
         <div class="sidebar-search">
             <form action="<?php echo url('companies'); ?>" method="GET" style="width: 100%;">
@@ -63,19 +53,19 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
             </form>
             <div id="search-suggestions-container"></div>
         </div>
-        <nav class="sidebar-nav">
-            <ul>
-                <li><a href="<?php echo url('home'); ?>" class="<?php echo $currentPage === 'home' ? 'active' : ''; ?>"><?php echo e(trans('homepage')); ?></a></li>
-                <li><a href="<?php echo url('companies'); ?>" class="<?php echo ($currentPage === 'companies' && !in_array($currentAction, ['create', 'import'])) ? 'active' : ''; ?>"><?php echo e(trans('company_list')); ?></a></li>
-                <li><a href="<?php echo url('companies', 'create'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'create') ? 'active' : ''; ?>"><?php echo e(trans('add_company')); ?></a></li>
+        <nav>
+            <md-list style="--md-list-container-color: transparent;">
+                <md-list-item headline="<?php echo e(trans('homepage')); ?>" href="<?php echo url('home'); ?>" <?php if ($currentPage === 'home') echo 'activated'; ?>></md-list-item>
+                <md-list-item headline="<?php echo e(trans('company_list')); ?>" href="<?php echo url('companies'); ?>" <?php if ($currentPage === 'companies' && !in_array($currentAction, ['create', 'import'])) echo 'activated'; ?>></md-list-item>
+                <md-list-item headline="<?php echo e(trans('add_company')); ?>" href="<?php echo url('companies', 'create'); ?>" <?php if ($currentPage === 'companies' && $currentAction === 'create') echo 'activated'; ?>></md-list-item>
                 <?php if ($auth->isAdmin()): ?>
-                    <li class="sidebar-nav-separator"><?php echo e(trans('admin_panel_title')); ?></li>
-                    <li><a href="<?php echo url('admin', 'dashboard'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'dashboard') ? 'active' : ''; ?>"><?php echo e(trans('admin_dashboard')); ?></a></li>
-                    <li><a href="<?php echo url('admin', 'users'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'users') ? 'active' : ''; ?>"><?php echo e(trans('user_management')); ?></a></li>
-                    <li><a href="<?php echo url('companies', 'import'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'import') ? 'active' : ''; ?>"><?php echo e(trans('import_companies')); ?></a></li>
-                    <li><a href="<?php echo url('admin', 'sitemap'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'sitemap') ? 'active' : ''; ?>"><?php echo e(trans('sitemap_generation')); ?></a></li>
+                    <md-divider></md-divider>
+                    <md-list-item headline="<?php echo e(trans('admin_dashboard')); ?>" href="<?php echo url('admin', 'dashboard'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'dashboard') echo 'activated'; ?>></md-list-item>
+                    <md-list-item headline="<?php echo e(trans('user_management')); ?>" href="<?php echo url('admin', 'users'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'users') echo 'activated'; ?>></md-list-item>
+                    <md-list-item headline="<?php echo e(trans('import_companies')); ?>" href="<?php echo url('companies', 'import'); ?>" <?php if ($currentPage === 'companies' && $currentAction === 'import') echo 'activated'; ?>></md-list-item>
+                    <md-list-item headline="<?php echo e(trans('sitemap_generation')); ?>" href="<?php echo url('admin', 'sitemap'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'sitemap') echo 'activated'; ?>></md-list-item>
                 <?php endif; ?>
-            </ul>
+            </md-list>
         </nav>
         <div class="sidebar-footer">
             <?php if ($isLoggedIn): ?>
