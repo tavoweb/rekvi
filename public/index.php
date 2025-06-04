@@ -5,8 +5,36 @@ declare(strict_types=1);
 
 session_start();
 
+// --- Language Configuration ---
+define('DEFAULT_LANGUAGE', 'lt');
+define('SUPPORTED_LANGUAGES', ['lt', 'en']);
+
+$current_language = DEFAULT_LANGUAGE;
+
+if (isset($_SESSION['lang']) && in_array($_SESSION['lang'], SUPPORTED_LANGUAGES)) {
+    $current_language = $_SESSION['lang'];
+}
+
+$GLOBALS['current_language_code'] = $current_language;
+
+$lang_file_path = __DIR__ . '/../languages/' . $current_language . '.php';
+
+if (file_exists($lang_file_path)) {
+    $translations = require $lang_file_path;
+} else {
+    $lang_file_path_default = __DIR__ . '/../languages/' . DEFAULT_LANGUAGE . '.php';
+    if (file_exists($lang_file_path_default)) {
+        $translations = require $lang_file_path_default;
+        $GLOBALS['current_language_code'] = DEFAULT_LANGUAGE;
+    } else {
+        $translations = [];
+    }
+}
+$GLOBALS['translations'] = $translations;
+// --- End Language Configuration ---
+
 require_once __DIR__ . '/../config/database.php';
-require_once __DIR__ . '/../src/helpers.php';
+require_once __DIR__ . '/../src/helpers.php'; // helpers.php now includes trans()
 require_once __DIR__ . '/../src/classes/Database.php';
 require_once __DIR__ . '/../src/classes/Auth.php';
 require_once __DIR__ . '/../src/classes/Company.php';
@@ -18,22 +46,22 @@ error_reporting(E_ALL);
 
 define('LOGO_UPLOAD_DIR_PUBLIC', '/uploads/logos/');
 define('LOGO_UPLOAD_PATH', __DIR__ . '/uploads/logos/');
-define('SITE_BASE_URL', 'http://localhost'); // Base URL for the site
+define('SITE_BASE_URL', 'http://localhost');
 
 if (!is_dir(LOGO_UPLOAD_PATH)) {
     if (!mkdir(LOGO_UPLOAD_PATH, 0775, true)) {
-        die("Klaida: Nepavyko sukurti logotipų katalogo: " . LOGO_UPLOAD_PATH);
+        die(trans('error_creating_logo_dir', ['path' => LOGO_UPLOAD_PATH]));
     }
 }
 if (!is_writable(LOGO_UPLOAD_PATH)) {
-    die("Klaida: Logotipų katalogas (" . LOGO_UPLOAD_PATH . ") nėra įrašomas (writable). Patikrinkite teises.");
+    die(trans('error_logo_dir_not_writable', ['path' => LOGO_UPLOAD_PATH]));
 }
 
 try {
     $db = new Database();
 } catch (Exception $e) {
     error_log($e->getMessage());
-    die("Atsiprašome, įvyko sisteminė klaida. Bandykite vėliau.");
+    die(trans('system_error_try_later'));
 }
 
 $auth = new Auth($db);
@@ -42,7 +70,6 @@ $view_data['total_companies'] = $companyManager->getTotalCompaniesCount();
 
 $view_template = 'home.php';
 
-// Initialize with defaults
 $page = 'home';
 $action = null;
 $id = null;
@@ -61,7 +88,6 @@ if (isset($_GET['url'])) {
         $id = (int)$segments[2];
     }
 } else {
-    // Fallback to old parameter structure if 'url' is not set
     $page = $_GET['page'] ?? 'home';
     $action = $_GET['action'] ?? null;
     $id = isset($_GET['id']) ? (int)$_GET['id'] : null;
@@ -89,10 +115,20 @@ switch ($page) {
 
             $result = $auth->registerUser($view_data['form_values']['username'], $view_data['form_values']['email'], $password, $confirmPassword);
             if ($result['success']) {
-                set_flash_message('success_message', $result['message']);
+                set_flash_message('success_message', trans($result['message_key'] ?? 'user_registered_successfully'));
                 redirect('login');
             } else {
-                $view_data['errors'] = $result['errors'];
+                // Translate error messages from Auth class
+                $translated_errors = [];
+                foreach($result['errors'] as $key => $error_key_or_message) {
+                    // If $error_key_or_message is an array, it means it has a key and params
+                    if (is_array($error_key_or_message) && isset($error_key_or_message['key'])) {
+                         $translated_errors[$key] = trans($error_key_or_message['key'], $error_key_or_message['params'] ?? []);
+                    } else {
+                         $translated_errors[$key] = trans($error_key_or_message);
+                    }
+                }
+                $view_data['errors'] = $translated_errors;
             }
         }
         $view_template = 'auth/register_form.php';
@@ -108,15 +144,15 @@ switch ($page) {
             $view_data['form_values']['username_or_email'] = $_POST['username_or_email'] ?? '';
             $password = $_POST['password'] ?? '';
             if ($auth->login($view_data['form_values']['username_or_email'], $password)) {
-                set_flash_message('success_message', 'Sėkmingai prisijungėte!');
+                set_flash_message('success_message', trans('logged_in_successfully'));
                 if ($auth->isAdmin()) {
                     redirect('companies');
                 } else {
                     redirect('home');
                 }
             } else {
-                $view_data['errors']['general'] = 'Neteisingas vartotojo vardas/el.paštas arba slaptažodis.';
-                $view_data['errors']['credentials'] = 'Patikrinkite įvestus duomenis.';
+                $view_data['errors']['general'] = trans('incorrect_username_or_password');
+                $view_data['errors']['credentials'] = trans('check_entered_data');
             }
         }
         $view_template = 'auth/login_form.php';
@@ -124,51 +160,47 @@ switch ($page) {
 
     case 'logout':
         $auth->logout();
-        set_flash_message('success_message', 'Sėkmingai atsijungėte.');
+        set_flash_message('success_message', trans('logged_out_successfully'));
         redirect('login');
         break;
 
     case 'companies':
         switch ($action) {
             case 'create':
-                // Leidžiame visiems kurti įmones, todėl administratoriaus patikrinimas pašalinamas.
-                // $auth->requireAdmin('index.php?page=companies', 'index.php?page=login');
                 $view_data['errors'] = [];
                 $view_data['company'] = null;
 
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $company_data = $_POST;
-                    $company_data['logotipas_filename'] = null; // Numatytasis, jei nieko neįkelta
+                    $company_data['logotipas_filename'] = null;
 
                     if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
-                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
+                        $view_data['errors']['general'] = trans('name_and_code_required');
                     } else {
-                        // Patikriname, ar įmonė su tokiu kodu jau egzistuoja
                         if ($companyManager->findCompanyByCode($company_data['imones_kodas'])) {
-                            $view_data['errors']['imones_kodas'] = 'Įmonė su tokiu įmonės kodu jau egzistuoja.';
+                            $view_data['errors']['imones_kodas'] = trans('company_code_exists');
                         }
                     }
 
-                    // Jei nėra klaidų dėl įmonės kodo, tvarkome logotipo įkėlimą
                     if (!isset($view_data['errors']['imones_kodas']) && isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
                         $upload_result = handle_logo_upload($_FILES['logotipas']);
                         if ($upload_result['success']) {
                             $company_data['logotipas_filename'] = $upload_result['filename'];
                         } else {
-                            $view_data['errors']['logotipas'] = $upload_result['error'];
+                             // error_key and error_params are new, must be implemented in handle_logo_upload
+                            $view_data['errors']['logotipas'] = trans($upload_result['error_key'] ?? 'logo_upload_error_generic', $upload_result['error_params'] ?? []);
                         }
                     }
 
-                    // Tikriname visas klaidas prieš bandant kurti
-                    if (empty($view_data['errors'])) { // Patikriname, ar $view_data['errors'] masyvas tuščias
+                    if (empty($view_data['errors'])) {
                         if ($companyManager->createCompany($company_data)) {
-                            set_flash_message('success_message', 'Įmonė sėkmingai pridėta.');
+                            set_flash_message('success_message', trans('company_created_successfully'));
                             redirect('companies');
                         } else {
-                            $view_data['errors']['general'] = 'Klaida pridedant įmonę. Patikrinkite duomenis arba serverio logus.';
+                            $view_data['errors']['general'] = trans('error_adding_company');
                         }
                     }
-                    foreach ($company_data as $key => $value) { // Išsaugome formos duomenis po klaidos
+                    foreach ($company_data as $key => $value) {
                         if (!is_array($value)) {
                             $view_data['company'][$key] = $value;
                         }
@@ -179,60 +211,51 @@ switch ($page) {
 
             case 'edit':
                 $auth->requireAdmin('companies', 'login');
-                if (!$id) {
-                    redirect('companies');
-                }
-
+                if (!$id) { redirect('companies'); }
                 $company = $companyManager->getCompanyById($id);
                 if (!$company) {
-                    set_flash_message('error_message', 'Įmonė nerasta.');
+                    set_flash_message('error_message', trans('company_not_found'));
                     redirect('companies');
                 }
-                $view_data['company'] = $company; // Perduodame esamus duomenis į formą
+                $view_data['company'] = $company;
                 $view_data['errors'] = [];
 
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $company_data = $_POST;
-                    $current_logo_db_filename = $company['logotipas']; // Iš DB gautas failo vardas
-
-                    $company_data['logotipas_filename'] = $current_logo_db_filename; // Priskiriame seną pagal nutylėjimą
+                    $current_logo_db_filename = $company['logotipas'];
+                    $company_data['logotipas_filename'] = $current_logo_db_filename;
 
                     if (isset($_POST['remove_logo']) && $_POST['remove_logo'] == '1') {
                         if ($current_logo_db_filename && file_exists(LOGO_UPLOAD_PATH . $current_logo_db_filename)) {
                             @unlink(LOGO_UPLOAD_PATH . $current_logo_db_filename);
                         }
-                        $company_data['logotipas_filename'] = null; // Nustatome null, kad DB būtų atnaujinta
+                        $company_data['logotipas_filename'] = null;
                     } elseif (isset($_FILES['logotipas']) && $_FILES['logotipas']['error'] !== UPLOAD_ERR_NO_FILE) {
-                        // Įkeliamas naujas, senas bus ištrintas handle_logo_upload viduje, jei sėkmingai
                         $upload_result = handle_logo_upload($_FILES['logotipas'], $current_logo_db_filename);
                         if (!$upload_result['success']) {
-                            $view_data['errors']['logotipas'] = $upload_result['error'];
-                            // Jei įkėlimas nepavyko, logotipas_filename lieka senas ($current_logo_db_filename),
-                            // nes $company_data['logotipas_filename'] buvo priskirtas $current_logo_db_filename anksčiau.
+                             $view_data['errors']['logotipas'] = trans($upload_result['error_key'] ?? 'logo_upload_error_generic', $upload_result['error_params'] ?? []);
                         } else {
-                            $company_data['logotipas_filename'] = $upload_result['filename']; // Sėkmingai įkeltas naujas arba senas, jei nebuvo įkelta
+                            $company_data['logotipas_filename'] = $upload_result['filename'];
                         }
                     }
 
                     if (empty($company_data['pavadinimas']) || empty($company_data['imones_kodas'])) {
-                        $view_data['errors']['general'] = 'Pavadinimas ir įmonės kodas yra privalomi.';
+                        $view_data['errors']['general'] = trans('name_and_code_required');
                     }
 
                     if (!isset($view_data['errors']['logotipas']) && empty($view_data['errors']['general'])) {
                         if ($companyManager->updateCompany($id, $company_data)) {
-                            set_flash_message('success_message', 'Įmonės duomenys sėkmingai atnaujinti.');
+                            set_flash_message('success_message', trans('company_updated_successfully'));
                             redirect('companies', 'view', $id);
                         } else {
-                            $view_data['errors']['general'] = 'Klaida atnaujinant įmonės duomenis. Patikrinkite serverio logus.';
+                            $view_data['errors']['general'] = trans('error_updating_company');
                         }
                     }
-                    // Atnaujiname $view_data['company'] su POST reikšmėmis, kad forma būtų užpildyta po klaidos
                     foreach ($company_data as $key => $value) {
                         if (!is_array($value) && array_key_exists($key, $view_data['company'])) {
                             $view_data['company'][$key] = $value;
                         }
                     }
-                    // Atnaujiname logotipo failo vardą $view_data, jei jis pasikeitė
                     $view_data['company']['logotipas'] = $company_data['logotipas_filename'];
                 }
                 $view_template = 'companies/form.php';
@@ -240,12 +263,10 @@ switch ($page) {
 
             case 'delete':
                 $auth->requireAdmin('companies', 'login');
-                if (!$id) {
-                    redirect('companies');
-                }
+                if (!$id) { redirect('companies'); }
                 $company = $companyManager->getCompanyById($id);
                 if (!$company) {
-                    set_flash_message('error_message', 'Įmonė nerasta norint ištrinti.');
+                    set_flash_message('error_message', trans('company_not_found_for_delete'));
                     redirect('companies');
                 }
                 $view_data['company'] = $company;
@@ -256,44 +277,39 @@ switch ($page) {
                 $auth->requireAdmin('companies');
                 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $id && isset($_POST['confirm_delete'])) {
                     if ($companyManager->deleteCompany($id)) {
-                        set_flash_message('success_message', 'Įmonė sėkmingai ištrinta.');
+                        set_flash_message('success_message', trans('company_deleted_successfully'));
                     } else {
-                        set_flash_message('error_message', 'Nepavyko ištrinti įmonės.');
+                        set_flash_message('error_message', trans('error_deleting_company'));
                     }
                 } else {
-                    set_flash_message('error_message', 'Neteisinga užklausa trynimui.');
+                    set_flash_message('error_message', trans('invalid_delete_request'));
                 }
                 redirect('companies');
                 break;
 
             case 'view':
-                if (!$id) {
-                    redirect('companies');
-                }
+                if (!$id) { redirect('companies'); }
                 $company = $companyManager->getCompanyById($id);
                 if (!$company) {
-                    set_flash_message('error_message', 'Įmonė nerasta.');
+                    set_flash_message('error_message', trans('company_not_found'));
                     redirect('companies');
                 }
                 $view_data['company'] = $company;
                 if ($company) {
-                    $view_data['meta_title'] = e($company['pavadinimas']) . ' - Rekvizitai'; // Dynamic title
-
-                    // Construct a meta description
+                    $view_data['meta_title'] = e($company['pavadinimas']) . ' - ' . trans('company_details_suffix');
                     $description_parts = [];
                     if (!empty($company['pavadinimas'])) {
-                        $description_parts[] = "Įmonės " . e($company['pavadinimas']) . " rekvizitai.";
+                        $description_parts[] = trans('company_meta_description_prefix', ['name' => e($company['pavadinimas'])]);
                     }
                     if (!empty($company['adresas_gatve'])) {
-                        $description_parts[] = e($company['adresas_gatve']);
+                        $description_parts[] = trans('company_meta_description_address_street', ['street' => e($company['adresas_gatve'])]);
                     }
                     if (!empty($company['adresas_miestas'])) {
-                        $description_parts[] = e($company['adresas_miestas']);
+                        $description_parts[] = trans('company_meta_description_address_city', ['city' => e($company['adresas_miestas'])]);
                     }
                     if (!empty($company['imones_kodas'])) {
-                        $description_parts[] = "Įmonės kodas: " . e($company['imones_kodas']);
+                        $description_parts[] = trans('company_meta_description_code', ['code' => e($company['imones_kodas'])]);
                     }
-                    // Join parts, ensuring not too long. Limit to around 160 chars.
                     $meta_desc_full = implode(', ', $description_parts);
                     if (mb_strlen($meta_desc_full) > 160) {
                         $meta_desc_full = mb_substr($meta_desc_full, 0, 157) . '...';
@@ -313,16 +329,15 @@ switch ($page) {
                         $file_tmp_path = $_FILES['csv_file']['tmp_name'];
                         $file_name = $_FILES['csv_file']['name'];
                         $file_size = $_FILES['csv_file']['size'];
-                        $file_type = $_FILES['csv_file']['type'];
                         $file_extension = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
                         $allowed_extension = 'csv';
-                        $max_file_size = 5 * 1024 * 1024; // 5MB
+                        $max_file_size = 5 * 1024 * 1024;
 
                         if ($file_extension !== $allowed_extension) {
-                            $view_data['errors']['general'] = 'Netinkamas failo formatas. Prašome įkelti .csv failą.';
+                            $view_data['errors']['general'] = trans('csv_import_invalid_file_format');
                         } elseif ($file_size > $max_file_size) {
-                            $view_data['errors']['general'] = 'Failas per didelis. Maksimalus dydis 5MB.';
+                            $view_data['errors']['general'] = trans('csv_import_file_too_large');
                         } else {
                             if (($handle = fopen($file_tmp_path, "r")) !== false) {
                                 $header = fgetcsv($handle, 0, ",");
@@ -335,7 +350,7 @@ switch ($page) {
                                     'Pastabos' => 'pastabos'
                                 ];
                                 if (!$header || !in_array('Pavadinimas', $header, true) || !in_array('ImonesKodas', $header, true)) {
-                                    $view_data['errors']['general'] = 'CSV failo antraštė neteisinga arba trūksta būtinų stulpelių (Pavadinimas, ImonesKodas).';
+                                    $view_data['errors']['general'] = trans('csv_import_invalid_header');
                                 } else {
                                     $import_stats = ['success_count' => 0, 'error_count' => 0, 'error_details' => []];
                                     $row_number = 1;
@@ -349,28 +364,28 @@ switch ($page) {
                                         }
                                         if (empty($company_data_to_insert['pavadinimas']) || empty($company_data_to_insert['imones_kodas'])) {
                                             $import_stats['error_count']++;
-                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Trūksta pavadinimo arba įmonės kodo.', 'data' => $data_row];
+                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => trans('csv_import_row_missing_data'), 'data' => $data_row];
                                             continue;
                                         }
                                         if ($companyManager->createCompany($company_data_to_insert)) {
                                             $import_stats['success_count']++;
                                         } else {
                                             $import_stats['error_count']++;
-                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => 'Nepavyko įrašyti į DB.', 'data' => $data_row];
+                                            $import_stats['error_details'][] = ['row' => $row_number, 'message' => trans('csv_import_db_error'), 'data' => $data_row];
                                         }
                                     }
                                     fclose($handle);
                                     $view_data['import_results'] = $import_stats;
                                 }
                             } else {
-                                $view_data['errors']['general'] = 'Nepavyko nuskaityti CSV failo.';
+                                $view_data['errors']['general'] = trans('csv_import_file_read_error');
                             }
                         }
                     } elseif (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] !== UPLOAD_ERR_NO_FILE) {
-                        $view_data['errors']['general'] = 'Klaida įkeliant failą. Klaidos kodas: ' . $_FILES['csv_file']['error'];
+                        $view_data['errors']['general'] = trans('csv_import_upload_error_code', ['code' => $_FILES['csv_file']['error']]);
                     } else {
                         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-                            $view_data['errors']['general'] = 'Prašome pasirinkti CSV failą.';
+                            $view_data['errors']['general'] = trans('csv_import_please_select_file');
                         }
                     }
                 }
@@ -378,56 +393,36 @@ switch ($page) {
                 break;
 
             case 'load_more_companies':
-                // Temporary error reporting for debugging this specific action
-                error_reporting(E_ALL);
-                ini_set('display_errors', 1);
-
-                // Crucial: Set content type header BEFORE any output
-                // If any PHP error occurs before this and display_errors is on, it could break JSON output.
-                // For robust production, consider a global error handler that formats errors as JSON for AJAX requests.
                 header('Content-Type: application/json');
-
                 if (!isset($_GET['ajax']) || $_GET['ajax'] !== '1') {
-                    // error_log("Non-AJAX attempt to access load_more_companies");
-                    // Ensure this error message is also JSON
-                    http_response_code(400); // Bad Request
+                    http_response_code(400);
                     echo json_encode(['error' => 'Invalid request method. This endpoint is for AJAX requests only.']);
                     exit;
                 }
-
                 $requested_page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
                 if ($requested_page <= 0) {
-                    // It's an AJAX endpoint, client expects JSON.
-                    http_response_code(400); // Bad Request
+                    http_response_code(400);
                     echo json_encode(['error' => 'Invalid page number.']);
                     exit;
                 }
-                
                 $search_query_ajax = $_GET['search_query'] ?? null;
                 $companies_per_page = 100; 
-                
-                // All variables for the response
                 $response_data = [
                     'companies' => [],
-                    'isAdmin' => $auth->isAdmin(), // Get isAdmin status regardless of company results
+                    'isAdmin' => $auth->isAdmin(),
                     'logos_dir_url' => LOGO_UPLOAD_DIR_PUBLIC,
-                    'search_query_active' => $search_query_ajax, // Reflect back the search query used
-                    'page' => $requested_page // Reflect back the page number processed
+                    'search_query_active' => $search_query_ajax,
+                    'page' => $requested_page
                 ];
-
                 try {
                     $companies = $companyManager->getAllCompanies($search_query_ajax, $requested_page, $companies_per_page);
                     $response_data['companies'] = $companies;
                 } catch (Exception $e) {
-                    // Log the actual error for server admin
                     error_log("Error in load_more_companies: " . $e->getMessage());
-                    // Provide a generic error in JSON format to the client
-                    http_response_code(500); // Internal Server Error
+                    http_response_code(500);
                     echo json_encode(['error' => 'An error occurred while fetching company data.']);
                     exit;
                 }
-                
-                // No stray echos or HTML output before this.
                 echo json_encode($response_data);
                 exit;
 
@@ -444,7 +439,6 @@ switch ($page) {
 
             default:
                 $search_query = $_GET['search_query'] ?? null;
-                // Fetch page 1, limit 100 for initial company list view
                 $view_data['companies'] = $companyManager->getAllCompanies($search_query, 1, 100);
                 if ($search_query) {
                     $view_data['search_query_active'] = $search_query;
@@ -455,46 +449,55 @@ switch ($page) {
         break;
 
     case 'admin':
-// Note: The original diff had two separate hunks. I'm combining the logic from the second hunk (which was identical to the first in terms of search/replace target) 
-// into the first one for clarity, as the tool expects one search/replace per block.
-// The original second SEARCH block was identical to the first one.
-// The original second REPLACE block was also effectively the same change.
-// This means the diff tool might have an issue if the same block appears twice.
-// I'm providing a single, consolidated change for `case 'load_more_companies':`
         $auth->requireAdmin();
         $admin_action = $action ?? 'dashboard';
 
         switch ($admin_action) {
-            case 'sitemap': // This case now just displays the sitemap page
+            case 'sitemap':
                 $auth->requireAdmin();
                 $view_template = 'admin/sitemap.php';
                 break;
 
-            case 'generate_sitemap_action': // This case handles the actual generation
+            case 'generate_sitemap_action':
                 $auth->requireAdmin();
                 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $sitemapGenerator = new SitemapGenerator($db, SITE_BASE_URL);
                     if ($sitemapGenerator->generate()) {
-                        set_flash_message('sitemap_success', 'Sitemap failai (indeksas ir dalys) sėkmingai sugeneruoti!');
+                        set_flash_message('sitemap_success', trans('sitemap_generation_success'));
                     } else {
-                        set_flash_message('sitemap_error', 'Klaida generuojant sitemap failus.');
+                        set_flash_message('sitemap_error', trans('sitemap_generation_error'));
                     }
                 } else {
-                    // Should not be accessed via GET
-                    set_flash_message('sitemap_error', 'Netinkamas užklausos metodas sitemap generavimui.');
+                    set_flash_message('sitemap_error', trans('sitemap_invalid_method_error'));
                 }
-                redirect('admin', 'sitemap'); // Redirect back to the sitemap page to show messages
+                redirect('admin', 'sitemap');
                 break;
+
+            case 'update_language_settings':
+                $auth->requireAdmin();
+                if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                    $selected_lang = $_POST['selected_language'] ?? null;
+                    if ($selected_lang && in_array($selected_lang, SUPPORTED_LANGUAGES)) {
+                        $_SESSION['lang'] = $selected_lang;
+                        set_flash_message('success_message', trans('language_update_success'));
+                    } else {
+                        set_flash_message('error_message', trans('language_update_error_invalid'));
+                    }
+                } else {
+                    set_flash_message('error_message', trans('language_update_error_method'));
+                }
+                redirect('admin', 'dashboard');
+                break;
+
             case 'users':
                 $view_data['users'] = $auth->getAllUsers();
                 $view_template = 'admin/users_list.php';
                 break;
             case 'dashboard':
+                $view_data['meta_title'] = trans('admin_dashboard_meta_title');
                 $view_template = 'admin/dashboard.php';
                 break;
             default:
-                // If no specific admin action is matched, or if it's an unknown action,
-                // redirect to the admin dashboard.
                 redirect('admin', 'dashboard');
                 break;
         }
@@ -503,19 +506,18 @@ switch ($page) {
     default:
         http_response_code(404);
         $view_data['error_code'] = 404;
-        $view_data['error_message'] = "Atsiprašome, ieškomas puslapis nerastas.";
+        // $view_data['error_message'] = trans('page_not_found'); // This $view_data not used as redirect happens
+        set_flash_message('error_message', trans('page_not_found'));
         redirect('home');
         break;
 }
 
 $view_data['auth'] = $auth;
-
-// Pass resolved page and action to header for consistent active link detection
-$view_data['current_page_resolved'] = $page; // $page is the main page segment (e.g., 'home', 'admin', 'companies')
+$view_data['current_page_resolved'] = $page;
 if ($page === 'admin') {
-    $view_data['current_action_resolved'] = $admin_action; // $admin_action is resolved (e.g. 'dashboard', 'users')
+    $view_data['current_action_resolved'] = $admin_action;
 } else {
-    $view_data['current_action_resolved'] = $action; // $action is the general action segment
+    $view_data['current_action_resolved'] = $action;
 }
 
 include __DIR__ . '/../templates/layout/header.php';

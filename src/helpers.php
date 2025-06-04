@@ -138,3 +138,59 @@ function handle_logo_upload(array $file_input, ?string $current_logo_filename = 
     }
     return ['success' => true, 'filename' => $current_logo_filename, 'error' => null]; // Nebuvo bandoma įkelti naujo failo
 }
+
+/**
+ * Translates a given key using the loaded language file.
+ *
+ * @param string $key The translation key.
+ * @param array $replacements An associative array of placeholders to replace in the translation.
+ *                             Example: ['name' => 'Jonas'] for a string "Sveiki, {name}!"
+ * @return string The translated string, or the key itself if not found.
+ */
+function trans(string $key, array $replacements = []): string
+{
+    // Access translations loaded in index.php
+    $translations = $GLOBALS['translations'] ?? [];
+
+    if (isset($translations[$key])) {
+        $string = $translations[$key];
+        if (!empty($replacements)) {
+            foreach ($replacements as $placeholder => $value) {
+                // Using {placeholder} format
+                $string = str_replace('{' . $placeholder . '}', (string)$value, $string);
+            }
+        }
+        return $string;
+    }
+
+    // Return the key itself if no translation is found
+    // Alternatively, for debugging: return "[Translation missing: {$key}]";
+    return $key;
+}
+
+/**
+ * Gets the currently active language code.
+ *
+ * @return string The current language code (e.g., 'lt', 'en').
+ */
+function getCurrentLanguageCode(): string
+{
+    return $GLOBALS['current_language_code'] ?? DEFAULT_LANGUAGE; // Fallback to default if not set
+}
+
+/**
+ * Ensures a URL has an http or https prefix.
+ *
+ * @param string|null $url The URL to check.
+ * @return string The URL with a prefix, or an empty string if input is empty.
+ */
+function ensure_http_prefix(?string $url): string
+{
+    if (empty($url)) {
+        return '';
+    }
+    if (!preg_match("~^(?:f|ht)tps?://~i", $url)) {
+        $url = "http://" . $url;
+    }
+    return $url;
+}

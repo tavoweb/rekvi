@@ -1,85 +1,106 @@
 <?php
 // templates/companies/view.php
 $company = $view_data['company'] ?? null;
-/** @var Auth $auth */ // подсказка IDE
-$auth = $view_data['auth'];
-$isAdmin = $auth->isAdmin();
+$auth = $view_data['auth']; // Assuming auth is always passed
 
 if (!$company) {
-    echo "<p>Klaida: Įmonės duomenys nerasti.</p>";
-    echo '<p><a href="' . url('companies') . '" class="button">Grįžti į sąrašą</a></p>';
-    return;
+    // This case should ideally be handled by redirect in index.php if company not found
+    // but as a fallback:
+    echo "<p>" . e(trans('no_companies_found')) . "</p>"; // Or a more specific error
+    return; // Stop further rendering
 }
 
-$logos_dir_url = LOGO_UPLOAD_DIR_PUBLIC;
+// Meta title is set in index.php: e($company['pavadinimas']) . ' - Rekvizitai';
+// This will be handled in Step 6 (PHP Logic Refactoring)
+// $view_data['meta_title'] = e($company['pavadinimas']) . ' - ' . trans('company_details_suffix');
 ?>
 
-<div class="company-profile-header">
-    <?php if (!empty($company['logotipas'])): ?>
-        <img src="<?php echo $logos_dir_url . e($company['logotipas']); ?>" alt="<?php echo e($company['pavadinimas']); ?> logotipas" class="company-logo-view">
-    <?php else: ?>
-        <div class="company-logo-placeholder-view">[Nėra logotipo]</div>
-    <?php endif; ?>
-    <h1><?php echo e($company['pavadinimas']); ?></h1>
+<div class="company-view-container">
+    <h1><?php echo e(trans('company_details_title_prefix')); ?> <?php echo e($company['pavadinimas']); ?></h1>
+
+    <div class="company-details">
+        <?php if (!empty($company['logotipas'])): ?>
+            <div class="company-logo-view">
+                <img src="<?php echo LOGO_UPLOAD_DIR_PUBLIC . e($company['logotipas']); ?>" alt="<?php echo e(trans('company_logo_alt', ['name' => $company['pavadinimas']])); ?>">
+            </div>
+        <?php else: ?>
+            <p><?php echo e(trans('no_logo_available')); ?></p>
+        <?php endif; ?>
+
+        <dl class="details-list">
+            <dt><?php echo e(trans('label_company_name')); ?></dt>
+            <dd><?php echo e($company['pavadinimas']); ?></dd>
+
+            <dt><?php echo e(trans('label_company_code')); ?></dt>
+            <dd><?php echo e($company['imones_kodas']); ?></dd>
+
+            <?php if (!empty($company['pvm_kodas'])): ?>
+                <dt><?php echo e(trans('label_pvm_code')); ?></dt>
+                <dd><?php echo e($company['pvm_kodas']); ?></dd>
+            <?php endif; ?>
+
+            <dt><?php echo e(trans('label_address')); ?></dt>
+            <dd>
+                <?php
+                $address_parts = [];
+                if (!empty($company['adresas_gatve'])) $address_parts[] = e($company['adresas_gatve']);
+                if (!empty($company['adresas_miestas'])) $address_parts[] = e($company['adresas_miestas']);
+                if (!empty($company['adresas_pasto_kodas'])) $address_parts[] = e($company['adresas_pasto_kodas']);
+                if (!empty($company['adresas_salis'])) $address_parts[] = e($company['adresas_salis']);
+                echo implode(', ', $address_parts ?: [e(trans('not_specified'))]); // Assuming 'not_specified' key if needed
+                ?>
+            </dd>
+
+            <?php if (!empty($company['telefonas'])): ?>
+                <dt><?php echo e(trans('label_phone')); ?></dt>
+                <dd><?php echo e($company['telefonas']); ?></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['el_pastas'])): ?>
+                <dt><?php echo e(trans('label_email')); ?></dt>
+                <dd><a href="mailto:<?php echo e($company['el_pastas']); ?>"><?php echo e($company['el_pastas']); ?></a></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['tinklalapis'])): ?>
+                <dt><?php echo e(trans('label_website')); ?></dt>
+                <dd><a href="<?php echo e(ensure_http_prefix($company['tinklalapis'])); ?>" target="_blank" rel="noopener noreferrer"><?php echo e($company['tinklalapis']); ?></a></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['vadovas_vardas_pavarde'])): ?>
+                <dt><?php echo e(trans('label_contact_person')); ?></dt> <?php // Assuming 'vadovas' is the main contact person for this label ?>
+                <dd><?php echo e($company['vadovas_vardas_pavarde']); ?></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['darbo_laikas'])): ?>
+                <dt><?php echo e(trans('label_working_hours')); ?></dt>
+                <dd><?php echo nl2br(e($company['darbo_laikas'])); ?></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['banko_pavadinimas'])): ?>
+                <dt><?php echo e(trans('label_bank_name')); ?></dt>
+                <dd><?php echo e($company['banko_pavadinimas']); ?></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['banko_saskaita'])): ?>
+                <dt><?php echo e(trans('label_bank_account')); ?></dt>
+                <dd><?php echo e($company['banko_saskaita']); ?></dd>
+            <?php endif; ?>
+
+            <?php if (!empty($company['pastabos'])): ?>
+                <dt><?php echo e(trans('label_notes')); ?></dt>
+                <dd><?php echo nl2br(e($company['pastabos'])); ?></dd>
+            <?php endif; ?>
+        </dl>
+    </div>
+
+    <div class="company-view-actions">
+        <a href="<?php echo url('companies'); ?>" class="button button-outline"><?php echo e(trans('back_to_company_list_button')); ?></a>
+        <?php if ($auth->isAdmin()): ?>
+            <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button"><?php echo e(trans('edit_company_button')); ?></a>
+            <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-danger"><?php echo e(trans('delete_company_button')); ?></a>
+        <?php endif; ?>
+    </div>
 </div>
-
-
-<div class="company-profile-details">
-    <div class="field-with-icon"><span class="material-icons">business</span><strong>Įmonės kodas:</strong> <?php echo e($company['imones_kodas']); ?></div>
-
-    <?php if (!empty($company['pvm_kodas'])): ?>
-    <div class="field-with-icon"><span class="material-icons">percent</span><strong>PVM kodas:</strong> <?php echo e($company['pvm_kodas']); ?></div>
-    <?php endif; ?>
-
-    <?php if (!empty($company['vadovas_vardas_pavarde'])): ?>
-    <div class="field-with-icon"><span class="material-icons">person</span><strong>Vadovas:</strong> <?php echo e($company['vadovas_vardas_pavarde']); ?></div>
-    <?php endif; ?>
-
-    <?php if (!empty($company['tinklalapis'])): ?>
-    <div class="field-with-icon"><span class="material-icons">language</span><strong>Tinklalapis:</strong> <a href="<?php echo e(strpos($company['tinklalapis'], 'http') !== 0 ? 'http://' . $company['tinklalapis'] : $company['tinklalapis']); ?>" target="_blank" rel="noopener noreferrer"><?php echo e($company['tinklalapis']); ?></a></div>
-    <?php endif; ?>
-
-    <?php if (!empty($company['darbo_laikas'])): ?>
-    <div class="field-with-icon"><span class="material-icons">schedule</span><strong>Darbo laikas:</strong><br><?php echo nl2br(e($company['darbo_laikas'])); ?></div>
-    <?php endif; ?>
-
-    <h3>Adresas</h3>
-    <p><span class="material-icons">place</span>
-        <?php
-        $address_parts = [];
-        if (!empty($company['adresas_gatve'])) $address_parts[] = e($company['adresas_gatve']);
-        if (!empty($company['adresas_miestas'])) $address_parts[] = e($company['adresas_miestas']);
-        if (!empty($company['adresas_pasto_kodas'])) $address_parts[] = e($company['adresas_pasto_kodas']);
-        if (!empty($company['adresas_salis'])) $address_parts[] = e($company['adresas_salis']);
-        echo !empty($address_parts) ? implode(', ', $address_parts) : 'Nenurodyta';
-        ?>
-    </p>
-
-    <h3>Kontaktinė informacija</h3>
-    <div class="field-with-icon"><span class="material-icons">call</span><strong>Telefonas:</strong> <?php echo !empty($company['telefonas']) ? e($company['telefonas']) : '-'; ?></div>
-    <div class="field-with-icon"><span class="material-icons">email</span><strong>El. paštas:</strong> <?php echo !empty($company['el_pastas']) ? e($company['el_pastas']) : '-'; ?></div>
-
-    <?php if (!empty($company['kontaktinis_asmuo'])): ?>
-    <div class="field-with-icon"><span class="material-icons">person_pin</span><strong>Kontaktinis asmuo:</strong> <?php echo e($company['kontaktinis_asmuo']); ?></div>
-    <?php endif; ?>
-
-    <h3>Banko informacija</h3>
-    <div class="field-with-icon"><span class="material-icons">account_balance</span><strong>Banko pavadinimas:</strong> <?php echo !empty($company['banko_pavadinimas']) ? e($company['banko_pavadinimas']) : '-'; ?></div>
-    <div class="field-with-icon"><span class="material-icons">payment</span><strong>Banko sąskaita (IBAN):</strong> <?php echo !empty($company['banko_saskaita']) ? e($company['banko_saskaita']) : '-'; ?></div>
-
-    <?php if (!empty($company['pastabos'])): ?>
-    <h3><span class="material-icons">note</span>Pastabos</h3>
-    <p><?php echo nl2br(e($company['pastabos'])); ?></p>
-    <?php endif; ?>
-
-    <div class="field-with-icon meta-info"><span class="material-icons">today</span><strong>Duomenys sukurti:</strong> <?php echo e(date("Y-m-d H:i", strtotime($company['sukurimo_data']))); ?></div>
-    <div class="field-with-icon meta-info"><span class="material-icons">update</span><strong>Paskutinis atnaujinimas:</strong> <?php echo e(date("Y-m-d H:i", strtotime($company['atnaujinimo_data']))); ?></div>
-
-</div>
-
-<div class="actions-bar">
-    <a href="<?php echo url('companies'); ?>" class="button button-secondary">Grįžti į įmonių sąrašą</a>
-    <?php if ($isAdmin): // Redagavimo mygtukas matomas tik administratoriams ?>
-        <a href="<?php echo url('companies', 'edit', (int)$company['id']); ?>" class="button">Redaguoti šią įmonę</a>
-    <?php endif; ?>
-</div>
+<?php
+// ensure_http_prefix() function moved to src/helpers.php
+?>
