@@ -1,3 +1,4 @@
+<p><a href="<?php echo url('admin', 'dashboard'); ?>" class="button button-outline">&larr; Atgal į Administratoriaus Skydelį</a></p>
 <?php
 // templates/companies/import_form.php
 $errors = $view_data['errors'] ?? [];
