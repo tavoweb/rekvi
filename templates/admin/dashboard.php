@@ -16,27 +16,9 @@
 <p><?php echo e(trans('welcome_to_admin_panel')); ?></p>
 
 <div class="admin-actions">
-    <p>
-        <md-outlined-button href="<?php echo url('admin', 'users'); ?>">
-            <md-icon slot="icon">group</md-icon>
-            <?php echo e(trans('user_list_link')); ?>
-
-        </md-outlined-button>
-    </p>
-    <p>
-        <md-outlined-button href="<?php echo url('companies', 'import'); ?>">
-            <md-icon slot="icon">upload</md-icon>
-            <?php echo e(trans('import_companies')); ?>
-
-        </md-outlined-button>
-    </p>
-    <p>
-        <md-outlined-button href="<?php echo url('admin', 'sitemap'); ?>">
-            <md-icon slot="icon">lan</md-icon>
-            <?php echo e(trans('sitemap_generation')); ?>
-
-        </md-outlined-button>
-    </p>
+    <p><a href="<?php echo url('admin', 'users'); ?>" class="button"><?php echo e(trans('user_list_link')); ?></a></p> <?php // Assuming 'user_list_link' is preferred over 'user_management' for this specific link ?>
+    <p><a href="<?php echo url('companies', 'import'); ?>" class="button"><?php echo e(trans('import_companies')); ?></a></p>
+    <p><a href="<?php echo url('admin', 'sitemap'); ?>" class="button"><?php echo e(trans('sitemap_generation')); ?></a></p>
 </div>
 
 <hr class="admin-section-divider">
@@ -52,6 +34,6 @@
                 <option value="en" <?php echo (getCurrentLanguageCode() === 'en') ? 'selected' : ''; ?>><?php echo e(trans('language_english')); ?></option>
             </select>
         </div>
-        <md-filled-button type="submit"><?php echo e(trans('save_language_button')); ?></md-filled-button>
+        <button type="submit" class="button"><?php echo e(trans('save_language_button')); ?></button>
     </form>
 </div>

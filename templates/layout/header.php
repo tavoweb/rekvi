@@ -16,65 +16,47 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
     <title><?php echo isset($view_data['meta_title']) ? e($view_data['meta_title']) : e(trans('site_title')); ?></title>
     <meta name="description" content="<?php echo isset($view_data['meta_description']) ? e($view_data['meta_description']) : e(trans('meta_description_default')); ?>">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css"> <?php // Root-relative path ensures CSS loads on all pages ?>
-    <link rel="stylesheet" href="/css/material-custom.css">
-    <script type="module" src="/js/bundle.js"></script>
 </head>
 <body>
 <!-- Overlay for mobile menu -->
 <div class="sidebar-overlay"></div>
 
-<!-- MD3 Top App Bar -->
-<div class="md3-top-app-bar">
-    <div class="leading-icon">
-        <md-icon-button id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>">
-            <md-icon>menu</md-icon>
-        </md-icon-button>
-    </div>
-    <a href="<?php echo url('home'); ?>" class="headline"><?php echo e(trans('main_site_brand')); ?></a>
-    <div class="trailing-icons">
-        <md-icon-button id="overflowMenuButton" aria-label="More options">
-            <md-icon>more_vert</md-icon>
-        </md-icon-button>
-        <md-menu id="overflowMenu" anchor="overflowMenuButton">
-            <md-menu-item headline="Option 1 (Placeholder)"></md-menu-item>
-            <md-menu-item headline="Option 2 (Placeholder)"></md-menu-item>
-            <?php if ($auth->isLoggedIn()): ?>
-                <md-divider role="separator"></md-divider>
-                <md-menu-item headline="<?php echo e(trans('logout')); ?>" href="<?php echo url('logout'); ?>"></md-menu-item>
-            <?php endif; ?>
-        </md-menu>
-    </div>
+<!-- Mobile Top Bar -->
+<div class="mobile-topbar">
+    <a href="<?php echo url('home'); ?>" class="mobile-brand"><?php echo e(trans('main_site_brand')); ?></a>
+    <button class="sidebar-toggle" id="sidebarToggleMobile" aria-label="<?php echo e(trans('toggle_navigation')); ?>"> <?php // Changed id to avoid conflict, if any ?>
+        <span></span><span></span><span></span>
+    </button>
 </div>
 
 <div class="page-wrapper">
     <aside class="sidebar">
+        <div class="sidebar-header">
+            <a href="<?php echo url('home'); ?>" class="sidebar-brand-link"><?php echo e(trans('main_site_brand')); ?></a>
+            <button class="sidebar-toggle" id="sidebarToggleDesktop" aria-label="<?php echo e(trans('toggle_navigation')); ?>"> <?php // Changed id to avoid conflict ?>
+                <span></span><span></span><span></span>
+            </button>
+        </div>
         <div class="sidebar-search">
-            <form action="<?php echo url('companies'); ?>" method="GET" style="width: 100%;">
-                <md-outlined-text-field
-                    style="width: 100%;"
-                    label="<?php echo e(trans('search_placeholder')); ?>"
-                    name="search_query"
-                    id="search-input"
-                    value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
-                </md-outlined-text-field>
+            <form action="<?php echo url('companies'); ?>" method="GET">
+                <input type="text" name="search_query" id="search-input" placeholder="<?php echo e(trans('search_placeholder')); ?>" value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
             </form>
             <div id="search-suggestions-container"></div>
         </div>
-        <nav>
-            <md-list style="--md-list-container-color: transparent;">
-                <md-list-item headline="<?php echo e(trans('homepage')); ?>" href="<?php echo url('home'); ?>" <?php if ($currentPage === 'home') echo 'activated'; ?>></md-list-item>
-                <md-list-item headline="<?php echo e(trans('company_list')); ?>" href="<?php echo url('companies'); ?>" <?php if ($currentPage === 'companies' && !in_array($currentAction, ['create', 'import'])) echo 'activated'; ?>></md-list-item>
-                <md-list-item headline="<?php echo e(trans('add_company')); ?>" href="<?php echo url('companies', 'create'); ?>" <?php if ($currentPage === 'companies' && $currentAction === 'create') echo 'activated'; ?>></md-list-item>
+        <nav class="sidebar-nav">
+            <ul>
+                <li><a href="<?php echo url('home'); ?>" class="<?php echo $currentPage === 'home' ? 'active' : ''; ?>"><?php echo e(trans('homepage')); ?></a></li>
+                <li><a href="<?php echo url('companies'); ?>" class="<?php echo ($currentPage === 'companies' && !in_array($currentAction, ['create', 'import'])) ? 'active' : ''; ?>"><?php echo e(trans('company_list')); ?></a></li>
+                <li><a href="<?php echo url('companies', 'create'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'create') ? 'active' : ''; ?>"><?php echo e(trans('add_company')); ?></a></li>
                 <?php if ($auth->isAdmin()): ?>
-                    <md-divider></md-divider>
-                    <md-list-item headline="<?php echo e(trans('admin_dashboard')); ?>" href="<?php echo url('admin', 'dashboard'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'dashboard') echo 'activated'; ?>></md-list-item>
-                    <md-list-item headline="<?php echo e(trans('user_management')); ?>" href="<?php echo url('admin', 'users'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'users') echo 'activated'; ?>></md-list-item>
-                    <md-list-item headline="<?php echo e(trans('import_companies')); ?>" href="<?php echo url('companies', 'import'); ?>" <?php if ($currentPage === 'companies' && $currentAction === 'import') echo 'activated'; ?>></md-list-item>
-                    <md-list-item headline="<?php echo e(trans('sitemap_generation')); ?>" href="<?php echo url('admin', 'sitemap'); ?>" <?php if ($currentPage === 'admin' && $currentAction === 'sitemap') echo 'activated'; ?>></md-list-item>
+                    <li class="sidebar-nav-separator"><?php echo e(trans('admin_panel_title')); ?></li>
+                    <li><a href="<?php echo url('admin', 'dashboard'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'dashboard') ? 'active' : ''; ?>"><?php echo e(trans('admin_dashboard')); ?></a></li>
+                    <li><a href="<?php echo url('admin', 'users'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'users') ? 'active' : ''; ?>"><?php echo e(trans('user_management')); ?></a></li>
+                    <li><a href="<?php echo url('companies', 'import'); ?>" class="<?php echo ($currentPage === 'companies' && $currentAction === 'import') ? 'active' : ''; ?>"><?php echo e(trans('import_companies')); ?></a></li>
+                    <li><a href="<?php echo url('admin', 'sitemap'); ?>" class="<?php echo ($currentPage === 'admin' && $currentAction === 'sitemap') ? 'active' : ''; ?>"><?php echo e(trans('sitemap_generation')); ?></a></li>
                 <?php endif; ?>
-            </md-list>
+            </ul>
         </nav>
         <div class="sidebar-footer">
             <?php if ($isLoggedIn): ?>
@@ -82,10 +64,10 @@ $currentAction = $view_data['current_action_resolved'] ?? '';
                     <div class="user-name"><?php echo e($currentUsername); ?></div>
                     <div class="user-role"><?php echo e(trans('user_role_display', ['role' => $currentUserRole])); ?></div>
                 </div>
-                <md-outlined-button style="width: 100%; margin-top: 5px;" href="<?php echo url('logout'); ?>"><?php echo e(trans('logout')); ?></md-outlined-button>
+                <a href="<?php echo url('logout'); ?>" class="button button-outline button-small"><?php echo e(trans('logout')); ?></a>
             <?php else: ?>
-                <md-filled-button style="width: 100%; margin-top: 5px;" href="<?php echo url('login'); ?>"><?php echo e(trans('login')); ?></md-filled-button>
-                <md-outlined-button style="width: 100%; margin-top: 5px;" href="<?php echo url('register'); ?>"><?php echo e(trans('register')); ?></md-outlined-button>
+                <a href="<?php echo url('login'); ?>" class="button button-primary button-small <?php echo $currentPage === 'login' ? 'active' : ''; ?>"><?php echo e(trans('login')); ?></a>
+                <a href="<?php echo url('register'); ?>" class="button button-outline button-small <?php echo $currentPage === 'register' ? 'active' : ''; ?>"><?php echo e(trans('register')); ?></a>
             <?php endif; ?>
         </div>
     </aside>

@@ -198,14 +198,4 @@ return [
     'logo_err_upload_failed' => 'Error uploading file to server.',
     'logo_err_upload_error_code' => 'File upload error. Code: {code}.',
     'logo_upload_error_generic' => 'Error uploading logo.',
-
-    // Added in style/icon consistency review
-    'search_companies_section_title' => 'Search Companies',
-    'search_button_label' => 'Search',
-    // 'go_to_admin_panel_button' => 'Go to Admin Panel', // Already exists
-    // 'login_page_title' => 'Login', // Already exists
-    'login_page_heading' => 'Login to Your Account',
-    // 'username_or_email_label' => 'Username or Email', // Already exists
-    // 'password_label' => 'Password', // Already exists
-    'login_button_label' => 'Login', // Differentiating from 'login_button' if used elsewhere for just "Login" text
 ];

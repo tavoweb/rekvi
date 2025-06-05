@@ -47,23 +47,11 @@ $view_data['meta_title'] = trans('companies_index_meta_title');
                             echo e(implode(', ', $address_parts));
                             ?>
                         </td>
-                        <td class="actions-cell" style="display: flex; align-items: center; gap: 8px;">
-                            <md-outlined-button href="<?php echo url('companies', 'view', $company['id']); ?>">
-                                <md-icon slot="icon">visibility</md-icon>
-                                <?php echo e(trans('view_action')); ?>
-
-                            </md-outlined-button>
+                        <td class="actions-cell">
+                            <a href="<?php echo url('companies', 'view', $company['id']); ?>" class="button button-small button-outline"><?php echo e(trans('view_action')); ?></a>
                             <?php if ($auth->isAdmin()): ?>
-                                <md-text-button href="<?php echo url('companies', 'edit', $company['id']); ?>">
-                                    <md-icon slot="icon">edit</md-icon>
-                                    <?php echo e(trans('edit_action')); ?>
-
-                                </md-text-button>
-                                <md-filled-button href="<?php echo url('companies', 'delete', $company['id']); ?>" style="--md-filled-button-container-color: var(--md-sys-color-error); --md-filled-button-label-text-color: var(--md-sys-color-on-error);">
-                                    <md-icon slot="icon">delete</md-icon>
-                                    <?php echo e(trans('delete_action')); ?>
-
-                                </md-filled-button>
+                                <a href="<?php echo url('companies', 'edit', $company['id']); ?>" class="button button-small"><?php echo e(trans('edit_action')); ?></a>
+                                <a href="<?php echo url('companies', 'delete', $company['id']); ?>" class="button button-small button-danger"><?php echo e(trans('delete_action')); ?></a>
                             <?php endif; ?>
                         </td>
                     </tr>
@@ -71,9 +59,5 @@ $view_data['meta_title'] = trans('companies_index_meta_title');
             </tbody>
         </table>
     </div>
-    <md-filled-button id="load-more-companies" data-page="1" data-search-query="<?php echo e($search_query_active ?? ''); ?>">
-        <md-icon slot="icon">expand_more</md-icon>
-        <?php echo e(trans('load_more_companies_button')); ?>
-
-    </md-filled-button>
+    <button id="load-more-companies" class="button" data-page="1" data-search-query="<?php echo e($search_query_active ?? ''); ?>"><?php echo e(trans('load_more_companies_button')); ?></button>
 <?php endif; ?>

@@ -19,28 +19,17 @@ $view_data['meta_title'] = trans('login_meta_title');
     <?php endif; ?>
 
     <form action="<?php echo url('login'); ?>" method="POST">
-        <md-outlined-text-field
-            label="<?php echo e(trans('username_or_email_label')); ?>"
-            type="text"
-            id="username_or_email"
-            name="username_or_email"
-            value="<?php echo e($form_values['username_or_email']); ?>"
-            required
-            style="width: 100%; margin-bottom: 16px;">
-        </md-outlined-text-field>
+        <div class="form-group">
+            <label for="username_or_email"><?php echo e(trans('username_or_email_label')); ?>:</label>
+            <input type="text" id="username_or_email" name="username_or_email" value="<?php echo e($form_values['username_or_email']); ?>" required>
+        </div>
 
-        <md-outlined-text-field
-            label="<?php echo e(trans('password_label')); ?>"
-            type="password"
-            id="password"
-            name="password"
-            required
-            style="width: 100%; margin-bottom: 16px;">
-        </md-outlined-text-field>
+        <div class="form-group">
+            <label for="password"><?php echo e(trans('password_label')); ?>:</label>
+            <input type="password" id="password" name="password" required>
+        </div>
 
-        <md-filled-button type="submit" style="width: 100%;">
-            <?php echo e(trans('login_button')); ?>
-        </md-filled-button>
+        <button type="submit" class="button button-primary"><?php echo e(trans('login_button')); ?></button>
     </form>
     <p class="auth-switch-prompt">
         <?php echo e(trans('dont_have_account')); ?>

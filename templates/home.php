@@ -12,20 +12,11 @@ $view_data['meta_title'] = trans('home_meta_title');
 <h1><?php echo e(trans('home_page_title')); ?></h1>
 
 <?php // Search form specific to home page, if it was indeed present ?>
-<div class="home-search-section card" style="padding: 16px; margin-bottom: 24px;">
-    <h2><?php echo e(trans('search_companies_section_title')); ?></h2> <?php // Changed to a more descriptive title ?>
-    <form id="home-search-form" action="<?php echo url('companies'); ?>" method="GET" style="display: flex; align-items: center; gap: 8px;">
-        <md-outlined-text-field
-            style="flex-grow: 1;"
-            label="<?php echo e(trans('search_placeholder')); ?>"
-            name="search_query"
-            id="home-search-input"
-            value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
-        </md-outlined-text-field>
-        <md-filled-button type="submit">
-            <md-icon slot="icon">search</md-icon>
-            <?php echo e(trans('search_button_label')); ?>
-        </md-filled-button>
+<div class="home-search-section card"> <?php // Added a wrapper class for styling ?>
+    <h2><?php echo e(trans('search_placeholder')); ?></h2> <?php // Re-using placeholder as a title for search section ?>
+    <form id="home-search-form" action="<?php echo url('companies'); ?>" method="GET" class="search-form">
+        <input type="text" name="search_query" id="home-search-input" class="search-input-field" placeholder="<?php echo e(trans('search_placeholder')); ?>" value="<?php echo isset($_GET['search_query']) ? e($_GET['search_query']) : ''; ?>">
+        <button type="submit" class="button search-submit-button"><span class="material-icons">search</span></button>
         <div id="home-search-suggestions-container" class="suggestions-container"></div>
     </form>
 </div>
@@ -42,13 +33,7 @@ $view_data['meta_title'] = trans('home_meta_title');
     <p><?php echo e(trans('logged_in_as', ['username' => $username])); ?></p>
 
     <?php if ($isAdmin): ?>
-        <p>
-            <md-filled-button href="<?php echo url('admin', 'dashboard'); ?>">
-                <md-icon slot="icon">admin_panel_settings</md-icon>
-                <?php echo e(trans('go_to_admin_panel_button')); ?>
-
-            </md-filled-button>
-        </p>
+        <p><a href="<?php echo url('admin', 'dashboard'); ?>" class="button"><?php echo e(trans('go_to_admin_panel_button')); ?></a></p>
     <?php endif; ?>
 
 <?php endif; ?>
